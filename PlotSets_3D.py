@@ -49,13 +49,16 @@ my_locator = MaxNLocator(6)
 
 def main(argV):
 
+    # Set up the arguments to the program
     usage = 'Read in a solution file for 3D front propagation and create plot images'
 
     parser = OptionParser(usage=usage)
     parser.add_option("", "-o", help="prepend to outputs", metavar="string", default='')
     parser.add_option("", "-n", help="start file numbering at", type="int", default=0)
     parser.add_option("", "-s", help="skip to iteration", type="int", default=None)
+    parser.add_option("", "--format", help="output file format", metavar="string", default='png')
     parser.add_option("", "--space-lim", help="spatial limits for the plot", type="float", default=3.0)
+    parser.add_option("", "--fig-size", help="set the size of the plotting window", type="int", default=6)
     parser.add_option("", "--show-plots", help="Show the plots", action='store_true', default=False)
     parser.add_option("", "--draw-info", help="start numbering at", action='store_true', default=False)
     parser.add_option("", "--pdf", help="save an additional copy of the image as a pdf", action='store_true',default=False)
@@ -63,9 +66,13 @@ def main(argV):
     parser.add_option("", "--point-cloud", help="Also make plots of the unconnected point cloud", action='store_true', default=False)
 
     (opts, args) = parser.parse_args(argV)
-
+    
+    # Validate input
     if len(args) != 2:
         print("Solution file must be given")
+        exit()
+    if opts.format not in ['png','pdf','eps']:
+        print("format unknown")
         exit()
 
     solFilename = args[1]
@@ -158,6 +165,9 @@ def main(argV):
             # Skip the blank line after the iteratoin
             fileInd += 1
             continue
+        if iterInd > opts.s:
+            print("\tIteration is after the one requested from -s, exiting")
+            break
 
         ## Make the plot
 
@@ -165,7 +175,7 @@ def main(argV):
         # TODO: Get all of the text and line sizes right
 
         print("\tPlotting iteration")
-        figSize = (6,6)
+        figSize = (opts.fig_size,opts.fig_size)
         fig = plt.figure(figsize=figSize)
         fig.canvas.set_window_title("Surface View")
         ax = plt3D.Axes3D(fig)
@@ -184,17 +194,15 @@ def main(argV):
         ax.set_zlim([-spaceLim,spaceLim])
 
         # Draw the actual plot
-        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=1.0)
+        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=1.0, linewidth=0.5)
         infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
             ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
 
 
         # Save the plot as a png and optionally a pdf
-        fileName = opts.o + "%06d"%(opts.n + iterInd)
-        plt.savefig(fileName + ".png")
-        if opts.pdf:
-            plt.savefig(fileName + ".pdf")
+        fileName = opts.o + "%06d"%(opts.n + iterInd) + '.' + opts.format
+        plt.savefig(fileName)
 
         # Optionally show the plots
         if opts.show_plots:
@@ -225,10 +233,8 @@ def main(argV):
                 ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
     
             # Save the plot as a png and optionally a pdf
-            fileName = opts.o + 'pointcloud' + "%06d"%(opts.n + iterInd)
-            plt.savefig(fileName + ".png")
-            if opts.pdf:
-                plt.savefig(fileName + ".pdf")
+            fileName = opts.o + 'pointcloud' + "%06d"%(opts.n + iterInd) + '.' + opts.format
+            plt.savefig(fileName)
 
             # Optionally show the plots
             if opts.show_plots:
