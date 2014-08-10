@@ -6,6 +6,7 @@
 import numpy as np
 
 import getopt, sys, os, stat, subprocess, string
+from math import sin,cos,tan
 
 from FluidFuncs import *
 
@@ -152,29 +153,20 @@ class AlphaFrontPropTESolver:
         dUzdy = self.fluidFunc.dUzdy(X[0],X[1],X[2],self.t)
         dUzdz = self.fluidFunc.dUzdz(X[0],X[1],X[2],self.t)
 
-        # See VSGC 2014 paper
-
+        # Compute optimal control changes
+        # See paper explanation (or Mathematica notebook 3D_Derivations.nb)
         if (phi < 0.001):
             # Avoid numerical blowup for degenerate phi
             thDot = 0
         else:
-            thDot = 0.5*(   (dUxdx - dUydy)*np.sin(2*th)
-                            - (dUxdy + dUydx)*np.cos(2*th) 
-                            - dUxdy + dUydx
-                            + 2*(1/np.tan(phi))*(dUzdx*np.sin(th) - dUzdy*np.cos(th))
-                        )
-
-        phiDot = 0.25*( - np.sin(2*phi)*( (dUxdx - dUydy)*np.cos(2*th)
-                                         + dUxdx + dUydy - 2*dUzdz
-                                         - (dUxdy + dUydx)*np.sin(2*th)
-                                         )
-                        -2*np.cos(th)* ( (dUxdz + dUzdx)*np.cos(2*phi)
-                                         - dUxdz + dUzdx
-                                       )
-                        -2*np.sin(th)* ( (dUydz + dUzdy)*np.cos(2*phi)
-                                         - dUydz + dUzdy
-                                       )
-                        ) 
+            thDot = -dUxdy*cos(th)**2 + dUydx*sin(th)**2            \
+                +   (dUxdx-dUydy)*cos(th)*sin(th)                   \
+                +   1.0 / tan(phi) * ( dUzdx*sin(th) - dUzdy*cos(th) )
+        
+        phiDot = -cos(phi)**2 * (dUzdx*cos(th) + dUzdy*sin(th)) \
+                + sin(phi)**2 * (dUxdz*cos(th) + dUydz*sin(th)) \
+                - 0.5 * ( -dUzdz + dUxdx*cos(th)**2 + dUydy*sin(th)**2 \
+                        + (dUxdy + dUydx)*cos(th)*sin(th) ) * sin(2*phi)
 
 
         delX = xDot * self.delT
@@ -202,7 +194,9 @@ class AlphaFrontPropTESolver:
         # Let the algorithm run. There will be extraneous output
         (outStr, errStr) = hullProc.communicate(input=inStr)
         hullProc.stdin.close()
-   
+  
+        #print("Output from CGAL:")
+        #print(outStr)
         if(len(errStr) > 0):
             print("   Error output from CGAL Alpha Hull:")
             print("      " + errStr)

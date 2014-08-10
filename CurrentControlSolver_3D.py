@@ -4,6 +4,7 @@
 
 import os,sys,time
 from optparse import OptionParser
+import shutil
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,37 +20,79 @@ def main(argV):
     usage = 'Run the 3D time-optimal alpha shape solver'
 
     parser = OptionParser(usage=usage)
-    parser.add_option("", "-o", help="Output file name", metavar="string", default='3D_Time_Energy_soln.txt')
+    parser.add_option("", "-o", help="Output directory", metavar="string", default='./')
 
     (opts, args) = parser.parse_args(argV)
 
-    ## Initial conditions
-        
-    p0 = np.array([0,0,0])
-    pf = np.array([-1,1,1])
+    if len(args) < 1:
+        print("Parameters file required")
+        exit()
 
-    # Background field
-    field = LinearXFlow3D(.3)
-    #field = Gyre3D(2, 2, 2, 2, 4)
+    print('Using output directory: "%s"'%(opts.o))
+
+    ## Read parameters from file
+    '''
+    Type:\tTYPE
+    Flow Name:\tNAME
+    Flow Params:\tp1\tp2\t...
+    p0:\tp0
+    pf:\tpf
+    delT:\tdelT
+    speed:\tspeed
+    Completion Distance:\tdist
+    Alpha:\talpha
+    '''
+    fileName = args[1]
+    print("Reading parameters from file: " + fileName)
+    # Get all lines without comments and copy the output file
+    lines = []
+    for line in open(fileName,'r').readlines():
+        if line[0] is not '#':
+            lines.append(line.strip())
+
+    print(lines)
+
+    # Save a copy of the parameter file
+    shutil.copyfile(fileName, opts.o + "input_params.txt")
+
+    # Verify that this is the correct run type
+    runType = lines[0].split("\t")[1]
+    if runType != "3D-TIME":
+        print("Incorrect run type, must be 3D-TIME")
+        exit()
+
+    # Get the type of flow and flow parameters
+    flowName = lines[1].split("\t")[1]
+    flows = { "Gyre3D" : Gyre3D     \
+            }
+    flowParams = [float(x) for x in lines[2].split("\t")[1:]]
+    field = flows[flowName](*flowParams)
+
+    # Get the initial and final positions
+    p0 = np.array([float(x) for x in lines[3].split('\t')[1:]])
+    pf = np.array([float(x) for x in lines[4].split('\t')[1:]])
+
+    # Get the problem and solution parameters
+    delT = float(lines[5].split("\t")[1])
+    speed = float(lines[6].split("\t")[1])
+    compDist = float(lines[7].split("\t")[1])
+    alpha = float(lines[8].split("\t")[1])
 
     # Create the solver and solve
     solver = AlphaFrontPropTESolver(field, p0, pf)
 
-    solver.delT = 0.15
-    solver.sMax = 0.5
+    solver.delT = delT
+    solver.sMax = speed
+    solver.completionDist = compDist
+    solver.alphaRad = alpha
 
-    solver.completionDist = 0.05
-    scoopD = .25
-
-    print("Scoop diameter = " + str(scoopD))
-    #solver.alpha = 1.0/4.0 * scoopD**2
-    solver.alphaRad = .5 * scoopD
-
-    solver.nThInit = 20
-    solver.nPhiInit = 20
+    # The should be reasonable in pretty much all cases, so hardcode
+    # them instead of setting for now.
+    solver.nThInit = 50
+    solver.nPhiInit = 50
 
     ## Initialize output file
-    fileName = opts.o
+    fileName = opts.o + "search_hist.txt"
     print("Initializing output file: " + fileName)
     outF = open(fileName, 'w')
     outF.write("Run name:\t%s Flow: %s\n"%(opts.o,field.name))

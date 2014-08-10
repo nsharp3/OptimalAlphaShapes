@@ -163,13 +163,14 @@ def main(argV):
         ax.set_ylim([-spaceLim,spaceLim])
         ax.set_zlim([-spaceLim,spaceLim])
 
-        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False)
+        # Draw the actual plot
+        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=0.4)
         infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
             ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
 
 
-        # Save the plot as a png and optionall a pdf
+        # Save the plot as a png and optionally a pdf
         fileName = opts.o + "%06d"%(opts.n + iterInd)
         plt.savefig(fileName + ".png")
         if opts.pdf:
