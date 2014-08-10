@@ -34,6 +34,19 @@ IND1\tIND2\tIND3
 ===========================================
 '''
 
+# RC params to make pretty plots
+# See: http://damon-is-a-geek.com/publication-ready-the-first-time-beautiful-reproducible-plots-with-matplotlib.html 
+from matplotlib import rcParams
+rcParams['axes.labelsize'] = 9
+rcParams['xtick.labelsize'] = 9
+rcParams['ytick.labelsize'] = 9
+rcParams['legend.fontsize'] = 9
+rcParams['font.family'] = 'serif'
+rcParams['font.serif'] = ['Computer Modern Roman']
+rcParams['text.usetex'] = True
+from matplotlib.ticker import MaxNLocator
+my_locator = MaxNLocator(6)
+
 def main(argV):
 
     usage = 'Read in a solution file for 3D front propagation and create plot images'
@@ -42,10 +55,12 @@ def main(argV):
     parser.add_option("", "-o", help="prepend to outputs", metavar="string", default='')
     parser.add_option("", "-n", help="start file numbering at", type="int", default=0)
     parser.add_option("", "-s", help="skip to iteration", type="int", default=None)
+    parser.add_option("", "--space-lim", help="spatial limits for the plot", type="float", default=3.0)
     parser.add_option("", "--show-plots", help="Show the plots", action='store_true', default=False)
     parser.add_option("", "--draw-info", help="start numbering at", action='store_true', default=False)
     parser.add_option("", "--pdf", help="save an additional copy of the image as a pdf", action='store_true',default=False)
-    parser.add_option("", "--make-movie", help="Run ffmpeg to make the move at the end", action='store_true', default=False)
+    parser.add_option("", "--make-movie", help="Run ffmpeg to make a movie at the end (with default settings that are usually decent)", action='store_true', default=False)
+    parser.add_option("", "--point-cloud", help="Also make plots of the unconnected point cloud", action='store_true', default=False)
 
     (opts, args) = parser.parse_args(argV)
 
@@ -150,21 +165,26 @@ def main(argV):
         # TODO: Get all of the text and line sizes right
 
         print("\tPlotting iteration")
-        fig = plt.figure(figsize=(14,14))
+        figSize = (6,6)
+        fig = plt.figure(figsize=figSize)
         fig.canvas.set_window_title("Surface View")
         ax = plt3D.Axes3D(fig)
         xLabel = ax.set_xlabel('X')
         yLabel = ax.set_ylabel('Y')
         zLabel = ax.set_zlabel('Z')
+        #ax.xaxis.set_major_locator(my_locator)
+        #ax.yaxis.set_major_locator(my_locator)
+        #ax.zaxis.set_major_locator(my_locator)
 
-        # TODO: Make the arguments to the program
-        spaceLim = 3
+        # TODO: Make these arguments to the program or something
+        # (also used below in point_cloud)
+        spaceLim = opts.space_lim
         ax.set_xlim([-spaceLim,spaceLim])
         ax.set_ylim([-spaceLim,spaceLim])
         ax.set_zlim([-spaceLim,spaceLim])
 
         # Draw the actual plot
-        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=0.4)
+        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=1.0)
         infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
             ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
@@ -182,10 +202,45 @@ def main(argV):
 
         plt.close(fig)
 
-        iterInd += 1
+        # Optionally make an unconnected point cloud plot
+        if opts.point_cloud:
+            
+            print("\tPlotting point cloud")
+            fig = plt.figure(figsize=figSize)
+            fig.canvas.set_window_title("Point Cloud")
+            ax = plt3D.Axes3D(fig)
+            xLabel = ax.set_xlabel('X')
+            yLabel = ax.set_ylabel('Y')
+            zLabel = ax.set_zlabel('Z')
+
+            # TODO: Make these arguments to the program or something
+            ax.set_xlim([-spaceLim,spaceLim])
+            ax.set_ylim([-spaceLim,spaceLim])
+            ax.set_zlim([-spaceLim,spaceLim])
+
+            # Draw the actual plot
+            ax.scatter(pts[:,0],pts[:,1],pts[:,2], color='black', s=4)
+            infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
+            if opts.draw_info:
+                ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
+    
+            # Save the plot as a png and optionally a pdf
+            fileName = opts.o + 'pointcloud' + "%06d"%(opts.n + iterInd)
+            plt.savefig(fileName + ".png")
+            if opts.pdf:
+                plt.savefig(fileName + ".pdf")
+
+            # Optionally show the plots
+            if opts.show_plots:
+                plt.show()
+
+            plt.close(fig)
+            
 
         # Skip the blank line after the iteratoin
         fileInd += 1
+
+        iterInd += 1
 
     # Optionally render a movie
     if opts.make_movie:
