@@ -22,6 +22,6 @@ To the authors' knowledge, this is the first published method for solving either
 * Overall, this code is not tested as a system like I wish it was, basically because there is nothing to compare against. I welcome suggestions for known or verifiable results to use for testing.
 
 ###Running
-Note that the CGAL_Alpha_Wrapper.cpp code which interfaces with CGAL needs to be compiled and linked against CGAL. This can be messy, you're your own for that. Look in to CGAL CMake scripts and how they work. A binary is provided which was compiled on 64-bit linux, there is a small chance this may work for you but it is unlikely the shared libraries will match up.
+Note that the CGAL_Alpha_Wrapper.cpp code which interfaces with CGAL needs to be compiled and linked against CGAL. This can be messy, you're your own for that. Look in to CGAL CMake scripts and how they work. A binary is provided which was compiled on 64-bit linux, there is a small chance this may work for you but it is unlikely.
 
 This is a RESEARCH code. It is meant as a prototype implementation of a new idea. It likely contains bugs. Do not trust this code for anything unless you have verfied its functionality yourself.
