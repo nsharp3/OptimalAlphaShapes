@@ -7,10 +7,8 @@ from optparse import OptionParser
 import shutil
 
 import numpy as np
-import matplotlib.pyplot as plt
-import mpl_toolkits.mplot3d.axes3d as plt3D
 
-from AlphaHullProp_3D import AlphaFrontPropTESolver
+from AlphaHullProp_3D import AlphaFrontPropTSolver
 from FluidFuncs import *
 
 
@@ -79,7 +77,7 @@ def main(argV):
     alpha = float(lines[8].split("\t")[1])
 
     # Create the solver and solve
-    solver = AlphaFrontPropTESolver(field, p0, pf)
+    solver = AlphaFrontPropTSolver(field, p0, pf)
 
     solver.delT = delT
     solver.sMax = speed
@@ -156,85 +154,6 @@ def main(argV):
     pathFile.close()
 
 
-    '''
-    # Plot solution
-
-    fig = plt.figure(figsize=(8,8))
-    fig.canvas.set_window_title("Surface View")
-    ax = plt3D.Axes3D(fig)
-    xLabel = ax.set_xlabel('X')
-    yLabel = ax.set_ylabel('Y')
-    zLabel = ax.set_zlabel('Z')
-    points = solver.pointSets[-1]
-    #ax.plot_trisurf(points[:,0],points[:,1],points[:,2], triangles=solver.surface, alpha=0.2)
-    ax.scatter(points[:,0],points[:,1],points[:,2])
-    plt.show()
-    plt.close(fig)
-
-
-    print(solver.solution)
-
-
-    print("Plotting solution")
-    fig = plt.figure(figsize=(14,14))
-    fig.canvas.set_window_title("Solution Path")
-    ax = plt3D.Axes3D(fig)
-    xLabel = ax.set_xlabel('X (space)')
-    yLabel = ax.set_ylabel('Y (space)')
-    zLabel = ax.set_zlabel('t (time)')
-
-    ax.set_xlim([-spaceLim,spaceLim])
-    ax.set_ylim([-spaceLim,spaceLim])
-    ax.set_zlim([-spaceLim,spaceLim])
-
-    ax.plot(solver.solution[:,0], solver.solution[:,1], solver.solution[:,2], color ='red', linewidth=6)
-    infoStr = 'steps = ' + str(solver.itNum) + '\ntime = ' + str(solver.t)
-    ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
-    ax.scatter(p0[0],p0[1],p0[2], c='black', marker = 'o', s = 40)
-    ax.scatter(pf[0],pf[1],pf[2], c='black', marker = 'o', s = 40)
-
-    # Save several copies to create a long frame at the end of the movie
-    while(i < solver.itNum + 20):
-        plt.savefig(("%s/%06d.png"%(fileName,i)))
-        i = i + 1
-
-    plt.show()
-    plt.close(fig)
-
-    # Do a 2D plot of the solved system
-
-    xArr = np.array(solver.solution[:,0])
-    yArr = np.array(solver.solution[:,1])
-    tArr = np.array(np.linspace(0, solver.t, len(solver.solution[:,0])))
-    thArr = np.array(solver.solution[:,3])
-    phiArr = np.array(solver.solution[:,4])
-
-    fig2D = plt.figure(figsize=(14, 14))
-    fig2D.canvas.set_window_title("Optimal Path Controls")
-
-    thAx = plt.subplot2grid((2,4),(0,0),colspan=4)
-    phiAx = plt.subplot2grid((2,4),(1,0),colspan=4)
-
-    thAx.plot(tArr, thArr, color='black', linewidth=5)
-    phiAx.plot(tArr, phiArr, color='black', linewidth=5)
-
-    thAx.set_title("In-Plane Heading Control Function")
-    thAx.set_ylabel("theta(t)")
-
-    phiAx.set_title("Vertical Heading Control Function")
-    phiAx.set_ylabel("phi(t)")
-    phiAx.set_xlabel("Time")
-
-    thAx.tick_params(axis='both')
-    phiAx.tick_params(axis='both')
-
-    while(i < solver.itNum + 40):
-        plt.savefig(("%s/%06d.png"%(fileName,i)))
-        i = i + 1
-
-    plt.show()
-    plt.close(fig2D)
-    '''
 
 if __name__ == "__main__":
     main(sys.argv)
