@@ -75,7 +75,7 @@ def main(argV):
 
     solDir = args[1]
 
-    solFilename = soldDir + 'search_hist.txt'
+    solFilename = solDir + 'search_hist.txt'
     print("Reading solution file from %s"%(solFilename))
 
     # Read through the file line by line
@@ -182,9 +182,9 @@ def main(argV):
         xLabel = ax.set_xlabel('X')
         yLabel = ax.set_ylabel('Y')
         zLabel = ax.set_zlabel('Z')
-        #ax.xaxis.set_major_locator(my_locator)
-        #ax.yaxis.set_major_locator(my_locator)
-        #ax.zaxis.set_major_locator(my_locator)
+        ax.xaxis.set_major_locator(my_locator)
+        ax.yaxis.set_major_locator(my_locator)
+        ax.zaxis.set_major_locator(my_locator)
 
         # TODO: Make these arguments to the program or something
         # (also used below in point_cloud)
@@ -194,7 +194,7 @@ def main(argV):
         ax.set_zlim([-spaceLim,spaceLim])
 
         # Draw the actual plot
-        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=1.0, linewidth=0.5)
+        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=1.0, linewidth=0.3)
         infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
             ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
@@ -225,6 +225,9 @@ def main(argV):
             ax.set_xlim([-spaceLim,spaceLim])
             ax.set_ylim([-spaceLim,spaceLim])
             ax.set_zlim([-spaceLim,spaceLim])
+            ax.xaxis.set_major_locator(my_locator)
+            ax.yaxis.set_major_locator(my_locator)
+            ax.zaxis.set_major_locator(my_locator)
 
             # Draw the actual plot
             ax.scatter(pts[:,0],pts[:,1],pts[:,2], color='black', s=4)

@@ -114,19 +114,18 @@ def main(argV):
         # Write iteration to file solution
         print("Writing iteration " + str(i))
         outF.write("Iteration:\t%d\n"%(i))
-        
+
         print("Writing points to file")
         points = solver.pointSets[-1]
-        
+
         #np.set_printoptions(threshold='nan')
         #np.set_printoptions(linewidth=132)
         #print(points)
-        
+
         outF.write("Num Pts:\t%d\n"%(len(points)))
         for iPt in range(len(points)):
             outF.write("%d\t%s\t%s\t%s\n"%(iPt,points[iPt,0],points[iPt,1],points[iPt,2]))
-        
-        
+
         print("Writing tris to file")
         tris = solver.surface
         outF.write("Num Tris:\t%d\n"%(len(tris)))
@@ -146,6 +145,7 @@ def main(argV):
     sol = solver.solution
 
     # Write out the header information
+    pathFile.write("Final Time:\t%s\n"%(str(solver.t)))
     pathFile.write("p0:\t"+"\t".join(str(x) for x in p0) +"\n")
     pathFile.write("pf:\t"+"\t".join(str(x) for x in pf) +"\n")
     pathFile.write("Num points:\t%d\n"%(len(sol)))
@@ -155,7 +155,7 @@ def main(argV):
         pathFile.write("\t".join(str(x) for x in p) + "\n")
     pathFile.close()
 
-    
+
     '''
     # Plot solution
 
@@ -166,7 +166,7 @@ def main(argV):
     yLabel = ax.set_ylabel('Y')
     zLabel = ax.set_zlabel('Z')
     points = solver.pointSets[-1]
-    #ax.plot_trisurf(points[:,0],points[:,1],points[:,2], triangles=solver.surface, alpha=0.2)    
+    #ax.plot_trisurf(points[:,0],points[:,1],points[:,2], triangles=solver.surface, alpha=0.2)
     ax.scatter(points[:,0],points[:,1],points[:,2])
     plt.show()
     plt.close(fig)
@@ -182,11 +182,11 @@ def main(argV):
     xLabel = ax.set_xlabel('X (space)')
     yLabel = ax.set_ylabel('Y (space)')
     zLabel = ax.set_zlabel('t (time)')
-        
+
     ax.set_xlim([-spaceLim,spaceLim])
     ax.set_ylim([-spaceLim,spaceLim])
     ax.set_zlim([-spaceLim,spaceLim])
-        
+
     ax.plot(solver.solution[:,0], solver.solution[:,1], solver.solution[:,2], color ='red', linewidth=6)
     infoStr = 'steps = ' + str(solver.itNum) + '\ntime = ' + str(solver.t)
     ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
