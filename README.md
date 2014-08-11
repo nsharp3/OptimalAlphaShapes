@@ -19,6 +19,7 @@ To the authors' knowledge, this is the first published method for solving either
 * Is compounding numerical error introduced when the controls are integrated from the ODEs instead of re-calculated geometrically from the mesh?
 * Classification of facets in the alpha shape from CGAL. Sometime extra interior facets are retained, is there a way to use the classifications to avoid this? Alternatively, post-process the shape to rectify a single surface and detect gaps.
 * Completion testing. Partly because of the facet classification issue, completition is tested simply by nearness to the hull. There are many other ways to do this.
+* Initialization in the time-energy problem. The speed is unbounded, so I can't come up with any elegant way to initialize the problem. For now I'm choosing an arbitrary maximal speed. This is valid as long as its sufficiently high, but must been done explicitly and isn't really a good idea.
 * Overall, this code is not tested as a system like I wish it was, basically because there is nothing to compare against. I welcome suggestions for known or verifiable results to use for testing.
 
 ###Running
