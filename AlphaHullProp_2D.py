@@ -22,7 +22,7 @@ class AlphaFrontPropTESolver:
         self.rhoT = rhoT
         self.fluidFunc = fluidFunc
        
-        self.t = 0
+        self.J = 0
 
         # Initialization parameters
         self.nThInit = 50
@@ -73,7 +73,7 @@ class AlphaFrontPropTESolver:
         index = 0
         for iTh in range(self.nThInit):
             for iS in range(1,self.nSInit+1):
-                initPts[index] = np.array([self.p0[0], self.p0[1], self.p0[2], thArr[iTh], sArr[iS], -1])
+                initPts[index] = np.array([self.p0[0], self.p0[1], 0, thArr[iTh], sArr[iS], -1])
                 index = index + 1
                 
         self.pointSets.append(initPts)
@@ -104,7 +104,7 @@ class AlphaFrontPropTESolver:
         # Generate the solution set, if needed 
         if(self.solutionFound):
             print("SOLUTION FOUND!!!")
-            self. ReconstructSolution()
+            self.ReconstructSolution()
     
     def PropagatePoints(self):
         
@@ -273,9 +273,7 @@ class AlphaFrontPropTESolver:
 
             # Check signs of cross products
             if ((c0 > 0 and c1 > 0 and c2 > 0) or (c0 < 0 and c1 < 0 and c2 < 0)):
-                print("Solution found!!")
                 self.solutionFound = True;
-                self.ReconstructSolution()
                 return
 
     def ReconstructSolution(self):
@@ -286,7 +284,7 @@ class AlphaFrontPropTESolver:
         pointTrail = []
 
         # Find the closest point in the current pointset
-        minInd = (np.apply_along_axis(np.linalg.norm,1,(self.pointSets[-1][:,0:3]-self.pf))).argmin()
+        minInd = (np.apply_along_axis(np.linalg.norm,1,(self.pointSets[-1][:,0:2]-self.pf))).argmin()
        
         print("Closest point:")
         print(self.pointSets[-1][minInd])

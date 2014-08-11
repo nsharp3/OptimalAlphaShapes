@@ -93,7 +93,7 @@ def main(argV):
     runTime = lines[1].strip().split('\t')[1]
     runType = lines[2].strip().split('\t')[1]
     #numIters = int(lines[3].strip().split('\t')[1])
-    deltaT = float(lines[3].strip().split('\t')[1])
+    delta = float(lines[3].strip().split('\t')[1])
 
     if runType not in ['3D-TIME','2D-TIME-ENERGY']:
         print("Run type '%s' invalid"%(runType))
@@ -110,7 +110,7 @@ def main(argV):
     print("\tRun time: %s"%(runTime))
     print("\tRun type: %s"%(runType))
     #print("\tNum iterations: %d"%(numIters))
-    print("\tdeltaT: %s"%(str(deltaT)))
+    print("\tdelta: %s"%(str(delta)))
     print("\tInitial P: " + str(initP))
     print("\tFinal P: " + str(finalP))
     print("\n")
@@ -165,7 +165,7 @@ def main(argV):
             # Skip the blank line after the iteratoin
             fileInd += 1
             continue
-        if iterInd > opts.s:
+        if opts.s != None and iterInd > opts.s:
             print("\tIteration is after the one requested from -s, exiting")
             break
 
@@ -181,27 +181,39 @@ def main(argV):
         ax = plt3D.Axes3D(fig)
         xLabel = ax.set_xlabel('X')
         yLabel = ax.set_ylabel('Y')
-        zLabel = ax.set_zlabel('Z')
-        ax.xaxis.set_major_locator(my_locator)
-        ax.yaxis.set_major_locator(my_locator)
-        ax.zaxis.set_major_locator(my_locator)
+        if runType == "3D-TIME":
+            zLabel = ax.set_zlabel('Z')
+        if runType == "2D-TIME-ENERGY":
+            zLabel = ax.set_zlabel('T')
+        #ax.xaxis.set_major_locator(my_locator)
+        #ax.yaxis.set_major_locator(my_locator)
+        #ax.zaxis.set_major_locator(my_locator)
 
         # TODO: Make these arguments to the program or something
         # (also used below in point_cloud)
         spaceLim = opts.space_lim
         ax.set_xlim([-spaceLim,spaceLim])
         ax.set_ylim([-spaceLim,spaceLim])
-        ax.set_zlim([-spaceLim,spaceLim])
+        if runType == "3D-TIME":
+            ax.set_zlim([-spaceLim,spaceLim])
+        if runType == "2D-TIME-ENERGY":
+            ax.set_zlim([0,spaceLim])
 
         # Draw the actual plot
         ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=1.0, linewidth=0.1)
-        infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
+        
+        # Draw the target
+        if runType == "2D-TIME-ENERGY":
+            ax.plot([finalP[0],finalP[0]],[finalP[1],finalP[1]],[0,spaceLim], c='black')
+        
+        infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*delta) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
             ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
 
 
         # Save the plot as a png and optionally a pdf
         fileName = solDir + "%06d"%(opts.n + iterInd) + '.' + opts.format
+        print("\tSaving plot file " + fileName)
         plt.savefig(fileName)
 
         # Optionally show the plots
@@ -231,7 +243,7 @@ def main(argV):
 
             # Draw the actual plot
             ax.scatter(pts[:,0],pts[:,1],pts[:,2], color='black', s=4)
-            infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
+            infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*delta) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
             if opts.draw_info:
                 ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
 
@@ -254,9 +266,6 @@ def main(argV):
     # Optionally render a movie
     if opts.make_movie:
         print("TODO: Implement this...")
-
-
-
 
 if __name__ == "__main__":
     main(sys.argv)

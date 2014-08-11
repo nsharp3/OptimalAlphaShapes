@@ -11,7 +11,7 @@ from math import sin,cos,tan
 from FluidFuncs import *
 
 
-class AlphaFrontPropTESolver:
+class AlphaFrontPropTSolver:
 
     # Initialize the solver
     def __init__(self, fluidFunc, p0, pf):

@@ -84,31 +84,33 @@ class LinearXFlow3D:
 class DoubleVortex:
 
     def __init__(self, vel, b, omega):
+        self.name = 'DoubleVortex'
+        self.info = '%s: vel = %.4e b = %.4e omega = %.4e'%(self.name,vel,b,omega)
         self.vel = vel
         self.b = b
         self.omega = omega
 
-    def U(self,x,y,t):
+    def Ux(self,x,y,t):
     	arg = np.pi * (x + self.b * np.cos(self.omega * t))
     	return self.vel*np.sin(arg)*np.cos(np.pi*y)
 
-    def V(self,x,y,t):
+    def Uy(self,x,y,t):
 	    arg = np.pi * (x + self.b * np.cos(self.omega * t))
 	    return -self.vel*np.cos(arg)*np.sin(np.pi*y)
 
-    def Ux(self,x,y,t):
+    def dUxdx(self,x,y,t):
     	arg = np.pi * (x + self.b * np.cos(self.omega * t))
     	return self.vel*np.pi*np.cos(arg)*np.cos(np.pi*y)
 
-    def Vy(self,x,y,t):
+    def dUydy(self,x,y,t):
     	arg = np.pi * (x + self.b * np.cos(self.omega * t))
     	return -self.vel*np.pi*np.cos(arg)*np.cos(np.pi*y)
     
-    def Uy(self,x,y,t):
+    def dUxdy(self,x,y,t):
     	arg = np.pi * (x + self.b * np.cos(self.omega * t))
     	return -self.vel*np.pi*np.sin(arg)*np.sin(np.pi*y)
 
-    def Vx(self,x,y,t):
+    def dUydx(self,x,y,t):
     	arg = np.pi * (x + self.b * np.cos(self.omega * t))
     	return self.vel*np.pi*np.sin(arg)*np.sin(np.pi*y)
 
