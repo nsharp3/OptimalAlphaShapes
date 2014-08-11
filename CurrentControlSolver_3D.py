@@ -136,6 +136,26 @@ def main(argV):
 
         i = i + 1
 
+    outF.close()
+
+    ## Write out the solution path
+    pathFilename = opts.o + 'optimal_trajectory.txt'
+    print("Writing solution to " + pathFilename)
+    pathFile = open(pathFilename, 'w')
+
+    sol = solver.solution
+
+    # Write out the header information
+    pathFile.write("p0:\t"+"\t".join(str(x) for x in p0) +"\n")
+    pathFile.write("pf:\t"+"\t".join(str(x) for x in pf) +"\n")
+    pathFile.write("Num points:\t%d\n"%(len(sol)))
+
+    # Write out each point
+    for p in sol:
+        pathFile.write("\t".join(str(x) for x in p) + "\n")
+    pathFile.close()
+
+    
     '''
     # Plot solution
 

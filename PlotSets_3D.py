@@ -1,4 +1,4 @@
-# Read in a solution file for a 3D front propagation run and create a plot image for each timestep
+# Read in a search history file for a 3D front propagation run and create a plot image for each timestep
 
 # Nicholas Sharp - nsharp3@vt.edu
 
@@ -13,7 +13,7 @@ import mpl_toolkits.mplot3d.axes3d as plt3D
 from FluidFuncs import *
 
 '''
-Solution file format:
+Search history file format:
 (Currently assumes target is a static point)
 Note that all data is TAB delimited
 Comment lines start with '#'
@@ -53,7 +53,6 @@ def main(argV):
     usage = 'Read in a solution file for 3D front propagation and create plot images'
 
     parser = OptionParser(usage=usage)
-    parser.add_option("", "-o", help="prepend to outputs", metavar="string", default='')
     parser.add_option("", "-n", help="start file numbering at", type="int", default=0)
     parser.add_option("", "-s", help="skip to iteration", type="int", default=None)
     parser.add_option("", "--format", help="output file format", metavar="string", default='png')
@@ -61,12 +60,11 @@ def main(argV):
     parser.add_option("", "--fig-size", help="set the size of the plotting window", type="int", default=6)
     parser.add_option("", "--show-plots", help="Show the plots", action='store_true', default=False)
     parser.add_option("", "--draw-info", help="start numbering at", action='store_true', default=False)
-    parser.add_option("", "--pdf", help="save an additional copy of the image as a pdf", action='store_true',default=False)
     parser.add_option("", "--make-movie", help="Run ffmpeg to make a movie at the end (with default settings that are usually decent)", action='store_true', default=False)
     parser.add_option("", "--point-cloud", help="Also make plots of the unconnected point cloud", action='store_true', default=False)
 
     (opts, args) = parser.parse_args(argV)
-    
+
     # Validate input
     if len(args) != 2:
         print("Solution file must be given")
@@ -75,7 +73,9 @@ def main(argV):
         print("format unknown")
         exit()
 
-    solFilename = args[1]
+    solDir = args[1]
+
+    solFilename = soldDir + 'search_hist.txt'
     print("Reading solution file from %s"%(solFilename))
 
     # Read through the file line by line
@@ -201,7 +201,7 @@ def main(argV):
 
 
         # Save the plot as a png and optionally a pdf
-        fileName = opts.o + "%06d"%(opts.n + iterInd) + '.' + opts.format
+        fileName = solDir + "%06d"%(opts.n + iterInd) + '.' + opts.format
         plt.savefig(fileName)
 
         # Optionally show the plots
@@ -212,7 +212,7 @@ def main(argV):
 
         # Optionally make an unconnected point cloud plot
         if opts.point_cloud:
-            
+
             print("\tPlotting point cloud")
             fig = plt.figure(figsize=figSize)
             fig.canvas.set_window_title("Point Cloud")
@@ -231,9 +231,9 @@ def main(argV):
             infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*deltaT) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
             if opts.draw_info:
                 ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
-    
-            # Save the plot as a png and optionally a pdf
-            fileName = opts.o + 'pointcloud' + "%06d"%(opts.n + iterInd) + '.' + opts.format
+
+            # Save the plot
+            fileName = solDir + 'pointcloud' + "%06d"%(opts.n + iterInd) + '.' + opts.format
             plt.savefig(fileName)
 
             # Optionally show the plots
@@ -241,7 +241,7 @@ def main(argV):
                 plt.show()
 
             plt.close(fig)
-            
+
 
         # Skip the blank line after the iteratoin
         fileInd += 1
