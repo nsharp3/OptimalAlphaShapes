@@ -4,6 +4,8 @@
 # Nicholas Sharp - nsharp@vt.edu
 
 import numpy as np
+np.set_printoptions(threshold=np.nan)
+np.set_printoptions(linewidth=200)
 
 import getopt, sys, os, stat, subprocess, string
 from math import sin,cos,tan
@@ -104,6 +106,7 @@ class AlphaFrontPropTESolver:
     
     def PropagatePoints(self):
         
+        
         currPts = self.pointSets[-1]
         
         newPts = []
@@ -122,9 +125,21 @@ class AlphaFrontPropTESolver:
                 newPt = currPts[i] + deltas
                 newPt[5] = i
                 newPts.append(newPt)
-        
 
-        print("   " + str(len(newPts)) + " points were propagated, " + str(len(currPts) - len(newPts)) + " were not")
+                # As mentioned in the paper, this is not the
+                # time-optimal special case, so we must retain the
+                # points from previous time steps if they still fall on
+                # the reachable set.
+                newPt = np.copy(currPts[i])
+                newPt[5] = i
+                newPts.append(newPt)
+  
+        np.set_printoptions(threshold=np.nan)
+        np.set_printoptions(linewidth=200)
+        #print(np.array(newPts))
+        #exit()
+
+        print("   " + str(len(newPts)) + " points were propagated, " + str(2*len(currPts) - len(newPts)) + " were not")
         self.pointSets.append(np.array(newPts))
         
     # Derived via Optimal Control Theory. See associated writeup.

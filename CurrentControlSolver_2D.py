@@ -64,7 +64,8 @@ def main(argV):
 
     # Get the type of flow and flow parameters
     flowName = lines[1].split("\t")[1]
-    flows = { "DoubleVortex" : DoubleVortex     \
+    flows = { "DoubleVortex" : DoubleVortex,     \
+              "LinearXFlow2D" : LinearXFlow2D,     \
             }
     flowParams = [float(x) for x in lines[2].split("\t")[1:]]
     field = flows[flowName](*flowParams)
