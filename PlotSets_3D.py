@@ -205,8 +205,13 @@ def main(argV):
         # Draw the target
         if runType == "2D-TIME-ENERGY":
             ax.plot([finalP[0],finalP[0]],[finalP[1],finalP[1]],[0,spaceLim], c='black')
+       
+        if runType == "2D-TIME-ENERGY":
+            costWord = "J"
+        if runType == "3D-TIME":
+            costWord = "t"
         
-        infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*delta) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
+        infoStr = 'iter = ' + str(iterInd) + '\n '+ costWord +' = ' + str(iterInd*delta) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
             ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
 
