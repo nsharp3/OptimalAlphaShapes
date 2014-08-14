@@ -5,33 +5,35 @@
 import numpy as np
 
 #  A a linear flow in the postive X direction
-class LinearXFlow:
+class LinearXFlow2D:
     
     def __init__(self, vel):
+        self.name = 'LinearXFlow3D'
+        self.info = '%s: vel = %.4e'%(self.name,vel)
         self.vel = vel
 
     # Velocity in the x-direction
-    def U(self,x,y,t):
+    def Ux(self,x,y,t):
         return self.vel
 
     # Velocity in the y-direction        
-    def V(self,x,y,t):
+    def Uy(self,x,y,t):
         return 0
 
     # dU/dx   
-    def Ux(self,x,y,t):        
+    def dUxdx(self,x,y,t):        
         return 0
     
     # dU/dy   
-    def Uy(self,x,y,t):        
+    def dUxdy(self,x,y,t):        
         return 0
 
     # dV/dx   
-    def Vx(self,x,y,t):        
+    def dUydx(self,x,y,t):        
         return 0
 
     # dV/dy   
-    def Vy(self,x,y,t):        
+    def dUydy(self,x,y,t):        
         return 0
 
 #  A 3D linear flow in the postive X direction
