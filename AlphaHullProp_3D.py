@@ -15,19 +15,19 @@ class AlphaFrontPropTSolver:
 
     # Initialize the solver
     def __init__(self, fluidFunc, p0, pf):
-        
+
         self.p0 = p0
         self.pf = pf
         self.fluidFunc = fluidFunc
-       
+
         self.t = 0
 
         # Initialization parameters
         self.nThInit = 50
         self.nPhiInit = 50
         self.sMax = 3
-        
-        
+
+
         # Algorithm parameters
         self.solutionFound = False
         self.itNum = 0
@@ -47,7 +47,7 @@ class AlphaFrontPropTSolver:
         # [x ,y, t, th, s, prevIndex] where the first 5 elements are reals
         # and the last is an index into the array from the previous iteration
         self.pointSets = []
-        
+
         # The suface corresponding to the current point set, computed by the 
         # alpha-shape algorithm. Stored an Nx3 array, where N is the number
         # of triangles and each triangle is stored as [pt0, pt1, pt2], which are
@@ -59,26 +59,25 @@ class AlphaFrontPropTSolver:
 
     # Generate the points to intialize the search
     def GenInitPts(self):
-    
-        nInitPts = self.nThInit * self.nPhiInit
-        initPts = np.empty([nInitPts + 1,6])
-        
+
+        initPts = []
+
         thArr = np.linspace(0, 2*np.pi, self.nThInit, endpoint=False)
         phiArr = np.linspace(0, np.pi, self.nPhiInit+1, endpoint=False)
-        
+
         # Note the indexing tricks to exclude the start and ending point
         # of phiArr
 
-        index = 0
         for iTh in range(self.nThInit):
             for iS in range(1,self.nPhiInit+1):
-                initPts[index] = np.array([self.p0[0], self.p0[1], self.p0[2], thArr[iTh], phiArr[iS], -1])
-                index = index + 1
-                
+                initPts.append((self.p0[0], self.p0[1], self.p0[2], thArr[iTh], phiArr[iS], -1))
+
+        initPts = np.array(initPts)
+
         self.pointSets.append(initPts)
-    
+
     def RunJStep(self):
-    
+
         self.itNum = self.itNum + 1
         print("\n===== Beginning search iteration " + str(self.itNum) + " =====")
         

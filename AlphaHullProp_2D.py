@@ -61,20 +61,16 @@ class AlphaFrontPropTESolver:
     # Generate the points to intialize the search
     def GenInitPts(self):
     
-        nInitPts = self.nThInit * self.nSInit
-        initPts = np.empty([nInitPts + 1,6])
+        initPts = []
         
         thArr = np.linspace(0, 2*np.pi, self.nThInit, endpoint=False)
-        sArr = np.linspace(0, self.initSMax, self.nSInit+1, endpoint=False)
+        sArr = np.linspace(0, self.initSMax, self.nSInit, endpoint=False)
         
-        # Note the indexing tricks to exclude the start and ending point
-        # of sArr
-
-        index = 0
         for iTh in range(self.nThInit):
-            for iS in range(1,self.nSInit+1):
-                initPts[index] = np.array([self.p0[0], self.p0[1], 0, thArr[iTh], sArr[iS], -1])
-                index = index + 1
+            for iS in range(self.nSInit):
+                initPts.append((self.p0[0], self.p0[1], 0, thArr[iTh], sArr[iS], -1))
+
+        initPts = np.array(initPts)
                 
         self.pointSets.append(initPts)
     
@@ -109,7 +105,7 @@ class AlphaFrontPropTESolver:
     def PropagatePoints(self):
         
         currPts = self.pointSets[-1]
-      
+        
         newPts = []
 
         # Count how many times each point appears in at least one triangle of the alpha-shape
@@ -126,7 +122,8 @@ class AlphaFrontPropTESolver:
                 newPt = currPts[i] + deltas
                 newPt[5] = i
                 newPts.append(newPt)
-            
+        
+
         print("   " + str(len(newPts)) + " points were propagated, " + str(len(currPts) - len(newPts)) + " were not")
         self.pointSets.append(np.array(newPts))
         
