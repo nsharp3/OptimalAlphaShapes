@@ -1,0 +1,31 @@
+An alpha shape is not necessarily equivalent to a hull (a surface defined on some points which encloses all other points). We identify two possibilities for how an alpha shape could fail to be a hull:
+
+    - The alpha shape has subset which is a valid hull, but possibly includes extraneous facets in the interior
+    - The alpha shape does not include a valid hull
+
+This document describes an algorithm for reconciling these issues. In this application, the first is the primary issue, so we focus on reconciling it. With proper interpolation, the second can be avoided. Given an alpha shape (a set of triangular facets defined over the input point cloud), this algorithm reconciles the first case, and detects many instances of the second case (see elaboration below).
+
+Procedure:
+    
+    - Compute rectangular bounds on the point cloud (x_min, x_max, y_min, y_max, z_min, z_max).
+
+    - Using these bounds, select a point p_0 which is near the point cloud but outside of it. An arbitratily distant point could be used instead, but this method avoids numerical issues when the coordinates of the point cloud are entirely unknown and possibly far from the orgin. Additionally, include some element of randomness in this selection. The exact selection process used here is as follows:
+
+        Let r1 and r2 be two random numbers uniformly sampled between 0 and 1. p_0 is then calculated as
+
+            x = x_min - 0.5 * (x_max - x_min)
+            y = y_min + r1 * (y_max - y_min)
+            z = z_min + r2 * (z_max - z_min)
+
+
+    - Now, randomly select any triangular facet in the alpha shape. Let the centroid of the triangle be p_1.
+
+    - Now construct a ray from p_0 --> p_1. This ray has the convenient property that it begins outside the desired hull and must intersect at least one triangular facet on or inside the hull. (Barring an extremely small chance that the ray is in plane with the facet selected above, which is addressed below)
+
+    - Now test every facet in the alpha shape to detect which intersect the ray. The facet which intersects the ray closest to p_0 is necessarily on the hull (if a hull exists). Furthermore, we can compute a normal vector to this facet which points "outside" the shape.
+
+    - Beginning with the facet identified above, traverse adjacent facets, marking them as part of the hull. If a facet only has one neighbor, then it must be a part of the hull. If it has more than one, the normal vector can be used to identify which is the outermost. If a facet has no neighbors, than this alpha shape does not include a valid hull.
+
+    - At the completion of the traversal, we have either marked a complete set facets which form a valid hull, or reported than none exists. There is a very small chance that latter case is a false negative due to a degenerate randomly selected p_0 and p_1. To be confident in this result we re-run the procedure several time (here N=10) and look for the same result. The algorithm is now complete: we can either report the subset of the shape which is a hull, or report that none exists.
+
+There is one possibility that this algorithm does not consider. There could be a valid surface which does not contain all points in the cloud. In our case this is very unlikely (impossible?) due to the interpolation strategy, so we do not address it here. This procedure could be extended to address that case.
