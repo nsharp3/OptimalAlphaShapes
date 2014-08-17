@@ -9,6 +9,7 @@ np.set_printoptions(linewidth=200)
 
 import getopt, sys, os, stat, subprocess, string
 from math import sin,cos,tan
+import random as rand
 
 from FluidFuncs import *
 
@@ -89,11 +90,18 @@ class AlphaFrontPropTESolver:
         print("Propagating front points")
         self.PropagatePoints()
         
-        # Compute an alpha-hull 
-        print("Computing alpha hull")
+        self.J = self.J + self.delJ
+
+        # Compute an alpha shape 
+        print("Computing alpha shape")
         self.ComputeHull()
         
-        self.J = self.J + self.delJ
+        # Reconcile the shape to hull
+        print("Reconciling alpha shape to hull")
+        hullFound = self.ReconcileHull()
+        if !hullFound:
+            print("Warning: alpha shape could not be reconciled to a hull. Exiting.")
+            exit()
 
         # Check if the set containst the target
         print("Checking for completion")
@@ -212,7 +220,59 @@ class AlphaFrontPropTESolver:
 
         self.surface = np.array(triList)
        
-        # TODO: Walk graph to remove interior faces?
+    # Given an alpha shape, reconcile it to an alpha hull or report that
+    # it cannot be done. See AlphaReconciliation.txt for a full
+    # explanation.
+    def ReconcileHull(self):
+
+        pts = self.pointSets[-1]
+        aShape = self.surface
+
+        # Compute bounds
+        mins = np.min(pts,0)
+        maxs = np.max(pts,0)
+
+        # Compute p0
+        r1 = rand.random()
+        r2 = rand.random()
+        p0x = mins[0] - 0.5 * (maxs[0] - mins[0])
+        p0y = mins[1] - r1 * (maxs[1] - mins[1])
+        p0z = mins[2] - r2 * (maxs[2] - mins[2])
+
+        # Compute p1
+        rInd = rand.randint(0,len(aShape)-1)
+        p1x = 0.0
+        p1y = 0.0
+        p1z = 0.0
+        for i in range(3):
+            p1x += pts[aShape[rInd,i],0]
+            p1y += pts[aShape[rInd,i],1]
+            p1z += pts[aShape[rInd,i],2]
+        p1x = p1x / 3.0
+        p1y = p1y / 3.0
+        p1z = p1z / 3.0
+
+        # Adjust p1 so that it definitely intersects the triangle it was
+        # generated from
+        p1x += 0.1 * (p1x - p0x)
+        p1y += 0.1 * (p1y - p0y)
+        p1z += 0.1 * (p1z - p0z)
+
+        # Find the triangular facet which intersects the line nearest p0
+        
+
+    # Tests if a ray intersects a triangle. Returns none if there is no
+    # intersection, or float s >= 0 which is a paramaterization of the
+    # intersection point along p0 --> p1
+    # 
+    # p0 and p1 are points. tri should be a 3x3 array of point x coord
+    #
+    # See http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
+    # TODO do they have something I can cite?
+    def RayIntersectTriangle(p0, p1, tri):
+        
+        
+
 
     def InterpolateSurface(self):
     
