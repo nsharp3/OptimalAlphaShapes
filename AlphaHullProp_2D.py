@@ -267,11 +267,53 @@ class AlphaFrontPropTESolver:
     # 
     # p0 and p1 are points. tri should be a 3x3 array of point x coord
     #
-    # See http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
+    # From http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
     # TODO do they have something I can cite?
     def RayIntersectTriangle(p0, p1, tri):
         
+        EPS = 0.000000001
+
+        # Get triangle edge vectors and plane normal
+        u = tri[1,:] - tri[0,:]
+        v = tri[2,:] - tri[0,:]
+        n = np.cross(u,v)
+
+        d = p1 - p0     # Ray direction vector
+        w0 = p0 - tri[0,:]
+        a = -np.dot(n,w0)
+        b = np.dot(n,d)
+
+        # The ray is inplane or disjoint from plane
+        if np.abs(b) < EPS:
+            return None
+
+        r = a / b       # The parameterization of the intersection point along the ray
         
+        # Test if the intersection point is "behind" the ray
+        if r < 0:
+            return None
+
+        intPoint = p0 + r*d
+
+        # Test if the intersection point is inside the triangle
+        uu = np.dot(u,u)
+        uv = np.dot(u,v)
+        vv = np.dot(v,v)
+        w = intPoint - tri[0,:]
+        wu = np.dot(w,u)
+        wv = np.dot(w,v)
+        D = uv*uv - uu*vv
+
+        # Compute and test the parametric coordinates
+        s = (uv * wv - vv * wu) / D
+        if s < 0 or s > 1:
+            return None
+        t = (uv * wu - uu * wv) / D
+        if t < 0 or (s+t) > 1:
+            return None
+
+        # This intersection is valid! Return the parameterization
+        return r
 
 
     def InterpolateSurface(self):
