@@ -51,8 +51,6 @@ def main(argV):
         if line[0] is not '#':
             lines.append(line.strip())
 
-    print(lines)
-
     # Save a copy of the parameter file
     shutil.copyfile(fileName, opts.o + "input_params.txt")
 

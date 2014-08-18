@@ -20,20 +20,20 @@ class AlphaFrontPropTESolver:
 
     # Initialize the solver
     def __init__(self, fluidFunc, p0, pf, rhoE, rhoT):
-        
+
         self.p0 = p0
         self.pf = pf
         self.rhoE = rhoE
         self.rhoT = rhoT
         self.fluidFunc = fluidFunc
-       
+
         self.J = 0
 
         # Initialization parameters
         self.nThInit = 50
         self.nSInit = 50
-        self.initSMax = 5 
-        
+        self.initSMax = 5
+
         # Algorithm parameters
         self.solutionFound = False
         self.itNum = 0
@@ -53,45 +53,47 @@ class AlphaFrontPropTESolver:
         # [x ,y, t, th, s, prevIndex] where the first 5 elements are reals
         # and the last is an index into the array from the previous iteration
         self.pointSets = []
-        
+
         # The suface corresponding to the current point set, computed by the 
         # alpha-shape algorithm. Stored an Nx3 array, where N is the number
         # of triangles and each triangle is stored as [pt0, pt1, pt2], which are
         # indices in to the current point set.
         self.surface = np.array([])
-    
+
         # Internal members
         self.interpStart = -1
+        self.oldPoints = set()
 
     # Generate the points to intialize the search
     def GenInitPts(self):
-    
+
         initPts = []
-        
+
         thArr = np.linspace(0, 2*np.pi, self.nThInit, endpoint=False)
-        sArr = np.linspace(0, self.initSMax, self.nSInit, endpoint=False)
-        
+        sArr = np.linspace(0, self.initSMax, self.nSInit+1)
+
         for iTh in range(self.nThInit):
-            for iS in range(self.nSInit):
+            for iS in range(1,self.nSInit+1): # Don't want point with 0 speed
                 initPts.append((self.p0[0], self.p0[1], 0, thArr[iTh], sArr[iS], -1))
 
+
         initPts = np.array(initPts)
-                
+
         self.pointSets.append(initPts)
-    
+
     def RunJStep(self):
-    
+
         self.itNum = self.itNum + 1
         print("\n===== Beginning search iteration " + str(self.itNum) + " =====")
-        
+
         # Interpolate points along the surface
         print("Interpolating points along surface")
         self.InterpolateSurface()
-    
+
         # Propagate points
         print("Propagating front points")
         self.PropagatePoints()
-        
+
         self.J = self.J + self.delJ
 
         # Compute an alpha shape 
@@ -100,10 +102,7 @@ class AlphaFrontPropTESolver:
         
         # Reconcile the shape to hull
         print("Reconciling alpha shape to hull")
-        hullFound = self.ReconcileHull()
-        if not hullFound:
-            print("Warning: alpha shape could not be reconciled to a hull. Exiting.")
-            exit()
+        self.ReconcileHull()
 
         # Check if the set containst the target
         print("Checking for completion")
@@ -113,7 +112,7 @@ class AlphaFrontPropTESolver:
         if(self.solutionFound):
             print("SOLUTION FOUND!!!")
             self.ReconstructSolution()
-    
+
     def PropagatePoints(self):
         
         
@@ -131,18 +130,26 @@ class AlphaFrontPropTESolver:
 
         for i in range(len(currPts)):
             if(counts[i] > 0 or self.itNum == 1):
-                deltas = self.OptimalDeltas(currPts[i])
-                newPt = currPts[i] + deltas
-                newPt[5] = i
-                newPts.append(newPt)
+
+                # Don't re-propagate points that were saved from
+                # previous costs
+                if tuple(currPts[i,0:5]) not in self.oldPoints:
+                    deltas = self.OptimalDeltas(currPts[i])
+                    newPt = currPts[i] + deltas
+                    newPt[5] = i
+                    newPts.append(newPt)
 
                 # As mentioned in the paper, this is not the
                 # time-optimal special case, so we must retain the
                 # points from previous time steps if they still fall on
-                # the reachable set.
-                newPt = np.copy(currPts[i])
-                newPt[5] = i
-                newPts.append(newPt)
+                # the reachable set. For code's sake, we special case
+                # the first iteration and keep only single point, as
+                # they all have the same coordinates in spacetime
+                if self.itNum > 1 or i == 0:
+                    newPt = np.copy(currPts[i])
+                    newPt[5] = i
+                    self.oldPoints.add(tuple(newPt[0:5]))
+                    newPts.append(newPt)
   
         np.set_printoptions(threshold=np.nan)
         np.set_printoptions(linewidth=200)
@@ -153,7 +160,6 @@ class AlphaFrontPropTESolver:
         self.pointSets.append(np.array(newPts))
         
     # Derived via Optimal Control Theory. See associated writeup.
-
     def OptimalDeltas(self, X):
     
         t = X[2]
@@ -234,6 +240,10 @@ class AlphaFrontPropTESolver:
         mins = np.min(pts,0)
         maxs = np.max(pts,0)
 
+        # TODO: Implement some kind of retry method to catch numerical
+        # issues in the initial raycasting? Maybe try to cast rays that
+        # aren't near any lines.
+
         # Compute p0
         r1 = rand.random()
         r2 = rand.random()
@@ -282,8 +292,7 @@ class AlphaFrontPropTESolver:
         toProcess = Queue.Queue()
 
         # Re-order the points of this triangle (if needed) so that the
-        # normal points outward TODO: make sure my normals aren't all
-        # backwards (though they are consistent)
+        # normal points outward
         ray = p1 - p0
         tNorm = self.TriNorm(aShape[firstTri])
         triNums = aShape[firstTri,:]
@@ -293,8 +302,8 @@ class AlphaFrontPropTESolver:
             triNums[2] = swap
         triNums = self.CanonTri(tuple(triNums))
 
-        # Add this first triangle to the hull face set and the to
-        # process list
+        # Add this first triangle to the hull face set and the 
+        # to-process list
         hullFaces.add(triNums)
         toProcess.put(triNums)
 
@@ -314,7 +323,6 @@ class AlphaFrontPropTESolver:
         while not toProcess.empty():
 
             tri = toProcess.get()
-            #print("Processing tri ==== " + str(tri))
 
             # The triangle was inserted in to toProcess in proper order,
             # so we can directly compute the normal vector
@@ -322,6 +330,7 @@ class AlphaFrontPropTESolver:
 
             # Check each of the neighbors
             for i in range(3):
+
                 j = (i+1)%3
                 k = (i+2)%3
 
@@ -330,11 +339,7 @@ class AlphaFrontPropTESolver:
                 # If there's only one entry it's the current triangle,
                 # and thus this facet has no neighbors.
                 if len(neighs) == 1:
-                    print("Error: Facet in reconciliation walk has no neighbors. Aborting")
-                    exit()
-
-                if len(neighs) > 2:
-                    print("Face has %d neighbors"%(len(neighs)-1))
+                    continue
 
                 # Find the outermost neighbor
                 outerMost = None
@@ -342,12 +347,10 @@ class AlphaFrontPropTESolver:
                 for oTriNum in neighs:
 
                     oTri = tuple(aShape[oTriNum])
-                    #print("oTri = " + str(oTri))
 
                     # One of the elements in the list is the current
                     # facet, skip it
                     if self.CanonTri(oTri) == tri or self.CanonTri((oTri[0],oTri[2],oTri[1])) == tri:
-                        #print("facet is this, skipping")
                         continue
 
                     # Arrange the winding so the normal is consistent
@@ -355,7 +358,6 @@ class AlphaFrontPropTESolver:
                     for ioTri in range(3):
                         if oTri[ioTri] != tri[i] and oTri[ioTri] != tri[j]:
                             thirdPt = oTri[ioTri]
-                    #print("thirdPt = " + str(thirdPt))
 
                     # The other triangle, properly wound
                     nOTri = (tri[i], thirdPt, tri[j])
@@ -392,30 +394,27 @@ class AlphaFrontPropTESolver:
                 cTri = self.CanonTri(outerMost)
 
                 # Verify that the facet with the opposite normal vector
-                # is not already there
+                # is not already there. If so, just move on because
+                # this can happen legitmiately during joining
+                # situations
                 revTri = self.CanonTri((cTri[0], cTri[2], cTri[1]))
                 if revTri in hullFaces:
-                    # TODO change to retry
-                    print("Error: Reconciliation walk attempted to add the same facet to the hull twice with different orientations. The mesh has problems, aborting.")
-                    #print("Rev tri = " + str(revTri))
-                    #print("cTri = " + str(cTri))
-                    exit()
-            
+                    continue
+
                 # If this facet isn't already a hull facet, add it and
                 # mark it for processing
                 if cTri not in hullFaces:
-                    #print("Adding new face " +str(cTri))
+                    # Note that this possibly adds the same triangle
+                    # to hullFaces, ordered two different ways. This
+                    # seems more proper anything else for now
                     hullFaces.add(cTri)
                     toProcess.put(cTri)
-                #else:
-                    #print("Face " + str(cTri) + " was already in hull")
     
         # Finally, we have the set of all hull faces. Assign it and
         # return success
         print("Before reconciliation, alpha shape had %d faces, after it has %d facets"%(len(aShape),len(hullFaces)))
         self.surface = np.array(list(hullFaces))
-        
-        return True
+            
 
     # Rotate the indicies defining a triangle to get a canonical
     # (comparable!) representation. Note that this DOES NOT change the
