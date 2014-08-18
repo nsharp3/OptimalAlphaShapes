@@ -10,6 +10,8 @@ np.set_printoptions(linewidth=200)
 import getopt, sys, os, stat, subprocess, string
 from math import sin,cos,tan
 import random as rand
+import Queue
+from collections import defaultdict
 
 from FluidFuncs import *
 
@@ -99,7 +101,7 @@ class AlphaFrontPropTESolver:
         # Reconcile the shape to hull
         print("Reconciling alpha shape to hull")
         hullFound = self.ReconcileHull()
-        if !hullFound:
+        if not hullFound:
             print("Warning: alpha shape could not be reconciled to a hull. Exiting.")
             exit()
 
@@ -252,14 +254,191 @@ class AlphaFrontPropTESolver:
         p1y = p1y / 3.0
         p1z = p1z / 3.0
 
-        # Adjust p1 so that it definitely intersects the triangle it was
-        # generated from
-        p1x += 0.1 * (p1x - p0x)
-        p1y += 0.1 * (p1y - p0y)
-        p1z += 0.1 * (p1z - p0z)
+        p0 = np.array([p0x,p0y,p0z])
+        p1 = np.array([p1x,p1y,p1z])
 
         # Find the triangular facet which intersects the line nearest p0
+        firstTri = -1
+        smallestR = -1
+        for i in range(len(aShape)):
+
+            # Represent the triangle as a list of points
+            tri = aShape[i]
+            triArr = np.array([pts[aShape[i,0],0:3], pts[aShape[i,1],0:3], pts[aShape[i,2],0:3]])
+
+            # Compute the intersection parameter
+            rInt = self.RayIntersectTriangle(p0, p1, triArr)
+            if rInt == None:
+                continue
+           
+            # Take the closest intersecter
+            if firstTri == -1 or  rInt < smallestR:
+                firstTri = i
+                smallestR = rInt
+
+        # The subset of the alpha shape which is in the hull
+        hullFaces = set()
+        # The facets to be processed as we traverse the list
+        toProcess = Queue.Queue()
+
+        # Re-order the points of this triangle (if needed) so that the
+        # normal points outward TODO: make sure my normals aren't all
+        # backwards (though they are consistent)
+        ray = p1 - p0
+        tNorm = self.TriNorm(aShape[firstTri])
+        triNums = aShape[firstTri,:]
+        if np.dot(ray, tNorm) > 0:
+            swap = triNums[1]
+            triNums[1] = triNums[2]
+            triNums[2] = swap
+        triNums = self.CanonTri(tuple(triNums))
+
+        # Add this first triangle to the hull face set and the to
+        # process list
+        hullFaces.add(triNums)
+        toProcess.put(triNums)
+
+        # We will need a lookup table from points to facets to
+        # efficiently implement the walk
+        facetsForPoints = defaultdict(list)
+        for i in range(len(aShape)):
+            facetsForPoints[tuple(sorted((aShape[i,0],aShape[i,1])))].append(i)
+            facetsForPoints[tuple(sorted((aShape[i,1],aShape[i,2])))].append(i)
+            facetsForPoints[tuple(sorted((aShape[i,2],aShape[i,0])))].append(i)
+
         
+        # Walk the facets to reconcile
+        # Note: I haven't examined this closely enough to identify exactly which
+        # kinds of topologically "wrong" alpha shapes will trick it in
+        # to walking seemingly valid hull. See AlphaReconciliation.txt
+        while not toProcess.empty():
+
+            tri = toProcess.get()
+            #print("Processing tri ==== " + str(tri))
+
+            # The triangle was inserted in to toProcess in proper order,
+            # so we can directly compute the normal vector
+            currNVect = self.TriNorm(tri)
+
+            # Check each of the neighbors
+            for i in range(3):
+                j = (i+1)%3
+                k = (i+2)%3
+
+                neighs = facetsForPoints[tuple(sorted((tri[i],tri[j])))]
+
+                # If there's only one entry it's the current triangle,
+                # and thus this facet has no neighbors.
+                if len(neighs) == 1:
+                    print("Error: Facet in reconciliation walk has no neighbors. Aborting")
+                    exit()
+
+                if len(neighs) > 2:
+                    print("Face has %d neighbors"%(len(neighs)-1))
+
+                # Find the outermost neighbor
+                outerMost = None
+                outerMostTh = 999
+                for oTriNum in neighs:
+
+                    oTri = tuple(aShape[oTriNum])
+                    #print("oTri = " + str(oTri))
+
+                    # One of the elements in the list is the current
+                    # facet, skip it
+                    if self.CanonTri(oTri) == tri or self.CanonTri((oTri[0],oTri[2],oTri[1])) == tri:
+                        #print("facet is this, skipping")
+                        continue
+
+                    # Arrange the winding so the normal is consistent
+                    # with the current triangle
+                    for ioTri in range(3):
+                        if oTri[ioTri] != tri[i] and oTri[ioTri] != tri[j]:
+                            thirdPt = oTri[ioTri]
+                    #print("thirdPt = " + str(thirdPt))
+
+                    # The other triangle, properly wound
+                    nOTri = (tri[i], thirdPt, tri[j])
+                    # Take the opposite of the normal vector here so the
+                    # math works out below
+                    otherNVect = -1*self.TriNorm(nOTri)
+
+                    # The vector along the edges, which defines the
+                    # normal vector of the plane that we will take the angle
+                    # about
+                    pI = pts[tri[i],0:3]
+                    pJ = pts[tri[j],0:3]
+                    vEdge = pJ - pI
+
+                    # Compute signed angle between the two normal
+                    # vectors (one reversed) in the plane defined by vEdge
+                    # This method explained here http://stackoverflow.com/questions/5188561/signed-angle-between-two-3d-vectors-with-same-origin-within-the-same-plane-reci
+                    sinA = np.linalg.norm(np.cross(currNVect, otherNVect))
+                    cosA = np.dot(currNVect, otherNVect)
+                    theta = np.arctan2(sinA, cosA)
+                    sign = np.dot(vEdge, np.cross(currNVect, otherNVect))
+                    if sign < 0:
+                        theta = -theta
+                    if theta < 0:
+                        theta += 2*np.pi
+
+                    if theta < outerMostTh:
+                        outerMost = nOTri
+                        outerMostTh = theta
+
+                # Now that the appropriate neighbor has been found,
+                # rotate it until it looks like the initial
+                # representation, with at most the last two switched
+                cTri = self.CanonTri(outerMost)
+
+                # Verify that the facet with the opposite normal vector
+                # is not already there
+                revTri = self.CanonTri((cTri[0], cTri[2], cTri[1]))
+                if revTri in hullFaces:
+                    # TODO change to retry
+                    print("Error: Reconciliation walk attempted to add the same facet to the hull twice with different orientations. The mesh has problems, aborting.")
+                    #print("Rev tri = " + str(revTri))
+                    #print("cTri = " + str(cTri))
+                    exit()
+            
+                # If this facet isn't already a hull facet, add it and
+                # mark it for processing
+                if cTri not in hullFaces:
+                    #print("Adding new face " +str(cTri))
+                    hullFaces.add(cTri)
+                    toProcess.put(cTri)
+                #else:
+                    #print("Face " + str(cTri) + " was already in hull")
+    
+        # Finally, we have the set of all hull faces. Assign it and
+        # return success
+        print("Before reconciliation, alpha shape had %d faces, after it has %d facets"%(len(aShape),len(hullFaces)))
+        self.surface = np.array(list(hullFaces))
+        
+        return True
+
+    # Rotate the indicies defining a triangle to get a canonical
+    # (comparable!) representation. Note that this DOES NOT change the
+    # winding direction.
+    def CanonTri(self, tri):
+        while not (tri[0] < tri[1] and tri[0] < tri[2]):
+            tri = (tri[2], tri[0], tri[1])
+        return tri
+
+    # Why doesn't numpy have normalize()?!
+    def normalize(self,v):
+        norm=np.linalg.norm(v)
+        if norm==0: 
+           return v
+        return v/norm 
+
+    # Takes triangle point indicies and computes the normal vector. Uses
+    # the current pointset
+    def TriNorm(self, triInds):
+        pts = self.pointSets[-1]
+        triArr = np.array([pts[triInds[0],0:3], pts[triInds[1],0:3], pts[triInds[2],0:3]])
+        tNorm = np.cross(triArr[1] - triArr[0], triArr[2] - triArr[0])
+        return self.normalize(tNorm)
 
     # Tests if a ray intersects a triangle. Returns none if there is no
     # intersection, or float s >= 0 which is a paramaterization of the
@@ -268,8 +447,9 @@ class AlphaFrontPropTESolver:
     # p0 and p1 are points. tri should be a 3x3 array of point x coord
     #
     # From http://geomalgorithms.com/a06-_intersect-2.html#intersect3D_RayTriangle()
-    # TODO do they have something I can cite?
-    def RayIntersectTriangle(p0, p1, tri):
+    # TODO do they have something I can cite? If they don't maybe use a
+    # different algorithm with peer-review
+    def RayIntersectTriangle(self, p0, p1, tri):
         
         EPS = 0.000000001
 
