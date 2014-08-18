@@ -1,6 +1,6 @@
 The MIT License (MIT)
 
-Copyright (c) [2014] [Nicholas Sharp <nsharp3@vt.edu>]
+Copyright (c) [2014] [Nicholas Sharp <nsharp3@vt.edu>, Shane Ross <sdross@vt.edu>]
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
