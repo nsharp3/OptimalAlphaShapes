@@ -42,7 +42,10 @@ niceRed  = '#CC0000'
 def main(argV):
 
     # Set up the arguments to the program
-    usage = 'Read in a solution file for 3D front propagation and create a 3D plot of the optimal trajectory as well as 2D plots of the optimal controls'
+    usage = '''python PlotSets.py SOLUTION_DIRECTORY\n
+Read in a solution file for 2D time-energy front propagation and create a 3D plot of the optimal trajectory as well as 2D plots of the optimal controls
+
+The SOLUTION_DIRECTOY should be the directory containing the data files for the run. Plots will also be saved there.'''
     parser = OptionParser(usage=usage)
 
     parser.add_option("", "--format", help="output file format", metavar="string", default='pdf')

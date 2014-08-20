@@ -16,7 +16,8 @@ from FluidFuncs import *
 def main(argV):
 
     ## Parse options
-    usage = 'Run the 2D time-energy optimal alpha shape solver'
+    usage = '''python CurrentControlSolver_2D.py INPUT_ARGS_FILE \n\n \
+Run the 2D time-energy optimal alpha shape solver'''
 
     parser = OptionParser(usage=usage)
     parser.add_option("", "-o", help="Output directory", metavar="string", default='./')

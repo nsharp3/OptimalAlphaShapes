@@ -50,7 +50,10 @@ my_locator = MaxNLocator(6)
 def main(argV):
 
     # Set up the arguments to the program
-    usage = 'Read in a solution file for 3D front propagation and create plot images'
+    usage = '''python PlotSets.py SOLUTION_DIRECTORY\n
+Read in a solution file for 3D front propagation and create plot images. By default, every iterations is plotted and saved. Use -s to plot a singler iteration.
+
+The SOLUTION_DIRECTOY should be the directory containing the data files for the run. Plots will also be saved there.'''
 
     parser = OptionParser(usage=usage)
     parser.add_option("", "-n", help="start file numbering at", type="int", default=0)
