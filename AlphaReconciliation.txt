@@ -5,8 +5,6 @@ An alpha shape is not necessarily equivalent to a hull (a surface defined on som
 
 This document describes an algorithm for reconciling the first issue. In this application, the first is the primary issue, so we focus on reconciling it. With proper interpolation, the second can be avoided.
 
-TODO: I have one idea for addressing instances of the second case. If a facet lacks a neighbor on one side, but all of its points points are included in some other good facet, just exclude it. If one of its points is not otherwise included, fail.
-
 Procedure:
     
     - Compute rectangular bounds on the point cloud (x_min, x_max, y_min, y_max, z_min, z_max).
@@ -28,6 +26,8 @@ Procedure:
 
     - Beginning with the facet identified above, traverse adjacent facets, marking them as part of the hull. If a facet only has one neighbor, then it must be a part of the hull. If it has more than one, the normal vector can be used to identify which is the outermost.
 
-    - At the completion of the traversal, we have either marked a set of facets which form the desired hull. There is a very small chance or erroneous results due to a degenerate randomly selected p_0 and p_1.
+    - At the completion of the traversal, we have either marked a set of facets which form the desired hull. There is a very small chance of erroneous results due to a degenerate randomly selected p_0 and p_1, we assume that the random choice of p_0 makes this unlikely.
 
-There is one possibility that this algorithm does not consider. There could be a valid surface which does not contain all points in the cloud. In our case this is unlikely due to the interpolation strategy and we do not address it here. This procedure could be extended to address that case.
+It is possible that a facet could lack a full set of neighbors; this is likely to happen when two distinct sections of a set join together. In fact, we use this algorithm to handle such cases elegantly. Any facet detected by this algorithm which does not have a complete set of neighbors is excluded from the final results. However, if all of the points in that facet are not included in some other valid facet, this is reported as an error and the method terminates. This has the benefit of avoiding inaccurate interpolation when two distinct sections of a set join together while behaving elgantly in the presence of concavities.
+
+There is one significant possibility that this algorithm does not consider. There could be a valid surface which does not contain all points in the cloud. In our case this is unlikely due to the interpolation strategy and we do not address it here. This procedure could be extended to address that case.

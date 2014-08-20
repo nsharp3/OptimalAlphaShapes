@@ -193,10 +193,10 @@ class AlphaFrontPropTESolver:
         delS = sDot * delT
 
         return np.array([delX, delY, delT, delTh, delS, 0])
-   
+
     # Wraps CGAL's Alpha-Hull implmementation
     def ComputeHull(self):
-        
+
         hullProc = subprocess.Popen(os.path.join(os.path.dirname(__file__),"CGAL_Alpha_Wrapper"), 
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         
@@ -227,7 +227,7 @@ class AlphaFrontPropTESolver:
                 triList.append([nums[0],nums[1],nums[2]])
 
         self.surface = np.array(triList)
-       
+
     # Given an alpha shape, reconcile it to an alpha hull or report that
     # it cannot be done. See AlphaReconciliation.txt for a full
     # explanation.
@@ -315,6 +315,8 @@ class AlphaFrontPropTESolver:
             facetsForPoints[tuple(sorted((aShape[i,1],aShape[i,2])))].append(i)
             facetsForPoints[tuple(sorted((aShape[i,2],aShape[i,0])))].append(i)
 
+        usedPoints = set()
+        excludedFacets = []
         
         # Walk the facets to reconcile
         # Note: I haven't examined this closely enough to identify exactly which
@@ -329,6 +331,7 @@ class AlphaFrontPropTESolver:
             currNVect = self.TriNorm(tri)
 
             # Check each of the neighbors
+            allNeighbors = True
             for i in range(3):
 
                 j = (i+1)%3
@@ -339,6 +342,7 @@ class AlphaFrontPropTESolver:
                 # If there's only one entry it's the current triangle,
                 # and thus this facet has no neighbors.
                 if len(neighs) == 1:
+                    allNeighbors = False
                     continue
 
                 # Find the outermost neighbor
@@ -409,12 +413,34 @@ class AlphaFrontPropTESolver:
                     # seems more proper anything else for now
                     hullFaces.add(cTri)
                     toProcess.put(cTri)
-    
+
+                    # Add its points to the set of all used points
+                    usedPoints.add(cTri[0])
+                    usedPoints.add(cTri[1])
+                    usedPoints.add(cTri[2])
+
+            # This is an invalid facet, it will not be included as part
+            # of the surface
+            if not allNeighbors:
+                excludedFacets.append(tri)
+
+
+        # Check for each of the facets that were excluded for lacking a full
+        # set of neighbors, all of the points in that facet were
+        # included on behalf of some other valid facet. Otherwise, the
+        # hull is not well-formed and we will fail with an error.
+        for invalidTri in excludedFacets:
+            for i in range(3):
+                if invalidTri[i] not in usedPoints:
+                    # Error out
+                    print("Hull is invalidly formed. Some facet has an incomplete set of neighbors, and at least one point in that facet is not a part of any valid facet.")
+                    exit()
+
         # Finally, we have the set of all hull faces. Assign it and
         # return success
-        print("Before reconciliation, alpha shape had %d faces, after it has %d facets"%(len(aShape),len(hullFaces)))
+        print("Before reconciliation, alpha shape had %d facets, after it has %d facets"%(len(aShape),len(hullFaces)))
         self.surface = np.array(list(hullFaces))
-            
+
 
     # Rotate the indicies defining a triangle to get a canonical
     # (comparable!) representation. Note that this DOES NOT change the

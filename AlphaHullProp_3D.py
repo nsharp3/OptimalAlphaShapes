@@ -304,6 +304,8 @@ class AlphaFrontPropTSolver:
             facetsForPoints[tuple(sorted((aShape[i,1],aShape[i,2])))].append(i)
             facetsForPoints[tuple(sorted((aShape[i,2],aShape[i,0])))].append(i)
 
+        usedPoints = set()
+        excludedFacets = []
         
         # Walk the facets to reconcile
         # Note: I haven't examined this closely enough to identify exactly which
@@ -318,6 +320,7 @@ class AlphaFrontPropTSolver:
             currNVect = self.TriNorm(tri)
 
             # Check each of the neighbors
+            allNeighbors = True
             for i in range(3):
 
                 j = (i+1)%3
@@ -328,6 +331,7 @@ class AlphaFrontPropTSolver:
                 # If there's only one entry it's the current triangle,
                 # and thus this facet has no neighbors.
                 if len(neighs) == 1:
+                    allNeighbors = False
                     continue
 
                 # Find the outermost neighbor
@@ -398,10 +402,32 @@ class AlphaFrontPropTSolver:
                     # seems more proper anything else for now
                     hullFaces.add(cTri)
                     toProcess.put(cTri)
+
+                    # Add its points to the set of all used points
+                    usedPoints.add(cTri[0])
+                    usedPoints.add(cTri[1])
+                    usedPoints.add(cTri[2])
+
+            # This is an invalid facet, it will not be included as part
+            # of the surface
+            if not allNeighbors:
+                excludedFacets.append(tri)
     
+
+        # Check for each of the facets that were excluded for lacking a full
+        # set of neighbors, all of the points in that facet were
+        # included on behalf of some other valid facet. Otherwise, the
+        # hull is not well-formed and we will fail with an error.
+        for invalidTri in excludedFacets:
+            for i in range(3):
+                if invalidTri[i] not in usedPoints:
+                    # Error out
+                    print("Hull is invalidly formed. Some facet has an incomplete set of neighbors, and at least one point in that facet is not a part of any valid facet.")
+                    exit()
+
         # Finally, we have the set of all hull faces. Assign it and
         # return success
-        print("Before reconciliation, alpha shape had %d faces, after it has %d facets"%(len(aShape),len(hullFaces)))
+        print("Before reconciliation, alpha shape had %d facets, after it has %d facets"%(len(aShape),len(hullFaces)))
         self.surface = np.array(list(hullFaces))
             
 
@@ -482,7 +508,7 @@ class AlphaFrontPropTSolver:
 
         # This intersection is valid! Return the parameterization
         return r
-    
+
 
     def InterpolateSurface(self):
     
