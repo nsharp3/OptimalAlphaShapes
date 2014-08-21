@@ -25,6 +25,7 @@ Run type:\t3D-TIME|2D-TIME-ENERGY
 Delta T:\tdelT
 Init P:\tX\tY\tZ|X\tY
 Final P:\tX\tY\tZ|X\tY
+Speed|Max Speed:\tspeed
 
 Iteration:\tNUM
 Num Pts:\tNUM
@@ -102,9 +103,11 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         print("Run type '%s' invalid"%(runType))
         exit()
 
-    headerInitP = lines[4].strip().split('\t')[1:]
+    # Don't do anything with the speed for now
+
+    headerInitP = lines[5].strip().split('\t')[1:]
     initP = [float(x) for x in headerInitP]
-    headerFinalP = lines[5].strip().split('\t')[1:]
+    headerFinalP = lines[6].strip().split('\t')[1:]
     finalP = [float(x) for x in headerFinalP]
 
     # Print out the info from the header
@@ -119,7 +122,7 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     print("\n")
 
     ## Process the remaining iterations one at a time
-    fileInd = 7
+    fileInd = 8
     iterInd = 0
     #for iterInd in range(numIters):
     while(True):

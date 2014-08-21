@@ -19,12 +19,13 @@ from FluidFuncs import *
 class AlphaFrontPropTESolver:
 
     # Initialize the solver
-    def __init__(self, fluidFunc, p0, pf, rhoE, rhoT):
+    def __init__(self, fluidFunc, p0, pf, rhoE, rhoT, sMax):
 
         self.p0 = p0
         self.pf = pf
         self.rhoE = rhoE
         self.rhoT = rhoT
+        self.sMax = sMax
         self.fluidFunc = fluidFunc
 
         self.J = 0
@@ -32,7 +33,6 @@ class AlphaFrontPropTESolver:
         # Initialization parameters
         self.nThInit = 50
         self.nSInit = 50
-        self.initSMax = 5
 
         # Algorithm parameters
         self.solutionFound = False
@@ -69,11 +69,13 @@ class AlphaFrontPropTESolver:
 
         initPts = []
 
+        print("Smax = " + str(self.sMax))
+
         thArr = np.linspace(0, 2*np.pi, self.nThInit, endpoint=False)
-        sArr = np.linspace(0, self.initSMax, self.nSInit+1)
+        sArr = np.linspace(0, self.sMax, self.nSInit+1)
 
         for iTh in range(self.nThInit):
-            for iS in range(1,self.nSInit+1): # Don't want point with 0 speed
+            for iS in range(1,self.nSInit+1): # Don't want point with 0 speed (it's degenerate an others will approach it)
                 initPts.append((self.p0[0], self.p0[1], 0, thArr[iTh], sArr[iS], -1))
 
 
@@ -136,6 +138,16 @@ class AlphaFrontPropTESolver:
                 if tuple(currPts[i,0:5]) not in self.oldPoints:
                     deltas = self.OptimalDeltas(currPts[i])
                     newPt = currPts[i] + deltas
+                    
+                    # Keep theta in [0,2Pi]
+                    newPt[3] = self.regTheta(newPt[3])
+
+                    # Implement bounded speed. The paper describes the
+                    # math as limiting the value of the derivative, this
+                    # min() accomplishes the same thing much more
+                    # simply. and sidesteps numerical issues.
+                    newPt[4] = min(newPt[4], self.sMax)
+
                     newPt[5] = i
                     newPts.append(newPt)
 
@@ -160,6 +172,8 @@ class AlphaFrontPropTESolver:
         self.pointSets.append(np.array(newPts))
         
     # Derived via Optimal Control Theory. See associated writeup.
+    # Note that the bounded speed condition is applied above in the
+    # propagation function.
     def OptimalDeltas(self, X):
     
         t = X[2]
@@ -193,6 +207,15 @@ class AlphaFrontPropTESolver:
         delS = sDot * delT
 
         return np.array([delX, delY, delT, delTh, delS, 0])
+
+    # Maps a value in to [0,2Pi)
+    def regTheta(self, th):
+        while th < 0:
+            th += 2*np.pi
+        while th >= 2*np.pi:
+            th -= 2*np.pi
+
+        return th
 
     # Wraps CGAL's Alpha-Hull implmementation
     def ComputeHull(self):
@@ -242,7 +265,9 @@ class AlphaFrontPropTESolver:
 
         # TODO: Implement some kind of retry method to catch numerical
         # issues in the initial raycasting? Maybe try to cast rays that
-        # aren't near any lines.
+        # aren't near any lines. Could check that the resulting ray is
+        # at least eps away from intersecting any line and re-cast if
+        # not.
 
         # Compute p0
         r1 = rand.random()

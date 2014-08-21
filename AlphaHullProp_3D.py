@@ -87,17 +87,17 @@ class AlphaFrontPropTSolver:
         # Interpolate points along the surface
         print("Interpolating points along surface")
         self.InterpolateSurface()
-    
+
         # Propagate points
         print("Propagating front points")
         self.PropagatePoints()
 
         self.t = self.t + self.delT
-        
+
         # Compute an alpha shape 
         print("Computing alpha shape")
         self.ComputeHull()
-        
+
         # Reconcile the shape to hull
         print("Reconciling alpha shape to hull")
         self.ReconcileHull()
@@ -105,16 +105,16 @@ class AlphaFrontPropTSolver:
         # Check if the set containst the target
         print("Checking for completion")
         self.CheckCompletion()
-       
+
         # Generate the solution set, if needed 
         if(self.solutionFound):
             print("SOLUTION FOUND!!!")
             self. ReconstructSolution()
-    
+
     def PropagatePoints(self):
-        
+
         currPts = self.pointSets[-1]
-      
+
         newPts = []
 
         # Count how many times each point appears in at least one triangle of the alpha-shape
@@ -129,16 +129,20 @@ class AlphaFrontPropTSolver:
             if(counts[i] > 0 or self.itNum == 1):
                 deltas = self.OptimalDeltas(currPts[i])
                 newPt = currPts[i] + deltas
+
+                # Keep theta in [0,2Pi]
+                newPt[3] = self.regTheta(newPt[3])
+
                 newPt[5] = i
                 newPts.append(newPt)
-            
+
         print("   " + str(len(newPts)) + " points were propagated, " + str(len(currPts) - len(newPts)) + " were not")
         self.pointSets.append(np.array(newPts))
-        
+
     # Derived via Optimal Control Theory. See associated writeup.
 
     def OptimalDeltas(self, X):
-    
+
         th = X[3]
         phi = X[4]
 
@@ -150,11 +154,11 @@ class AlphaFrontPropTSolver:
         dUxdx = self.fluidFunc.dUxdx(X[0],X[1],X[2],self.t)
         dUxdy = self.fluidFunc.dUxdy(X[0],X[1],X[2],self.t)
         dUxdz = self.fluidFunc.dUxdz(X[0],X[1],X[2],self.t)
-        
+
         dUydx = self.fluidFunc.dUydx(X[0],X[1],X[2],self.t)
         dUydy = self.fluidFunc.dUydy(X[0],X[1],X[2],self.t)
         dUydz = self.fluidFunc.dUydz(X[0],X[1],X[2],self.t)
-        
+
         dUzdx = self.fluidFunc.dUzdx(X[0],X[1],X[2],self.t)
         dUzdy = self.fluidFunc.dUzdy(X[0],X[1],X[2],self.t)
         dUzdz = self.fluidFunc.dUzdz(X[0],X[1],X[2],self.t)
@@ -168,7 +172,7 @@ class AlphaFrontPropTSolver:
             thDot = -dUxdy*cos(th)**2 + dUydx*sin(th)**2            \
                 +   (dUxdx-dUydy)*cos(th)*sin(th)                   \
                 +   1.0 / tan(phi) * ( dUzdx*sin(th) - dUzdy*cos(th) )
-        
+
         phiDot = -cos(phi)**2 * (dUzdx*cos(th) + dUzdy*sin(th)) \
                 + sin(phi)**2 * (dUxdz*cos(th) + dUydz*sin(th)) \
                 - 0.5 * ( -dUzdz + dUxdx*cos(th)**2 + dUydy*sin(th)**2 \
@@ -182,25 +186,34 @@ class AlphaFrontPropTSolver:
         delPhi = phiDot * self.delT
 
         return np.array([delX, delY, delZ, delTh, delPhi, 0])
-   
+
+    # Maps a value in to [0,2Pi)
+    def regTheta(self, th):
+        while th < 0:
+            th += 2*np.pi
+        while th >= 2*np.pi:
+            th -= 2*np.pi
+
+        return th
+
     # Wraps CGAL's Alpha-Hull implmementation
     def ComputeHull(self):
-        
+
         hullProc = subprocess.Popen(os.path.join(os.path.dirname(__file__),"CGAL_Alpha_Wrapper"), 
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-        
+
         points = self.pointSets[-1]
-        
+
         # See above for inconsistency of definitions
         CGAL_Alpha = self.alphaRad**2
 
         # Efficiently (ish) build the giant string to pass to stdin
         inStr = str(CGAL_Alpha) + "\n" + str(len(points)) + "\n"  + ''.join([str(point[0]) + " " + str(point[1]) + " "  + str(point[2]) + "\n" for point in points])
-        
+
         # Let the algorithm run. There will be extraneous output
         (outStr, errStr) = hullProc.communicate(input=inStr)
         hullProc.stdin.close()
-  
+
         #print("Output from CGAL:")
         #print(outStr)
         if(len(errStr) > 0):

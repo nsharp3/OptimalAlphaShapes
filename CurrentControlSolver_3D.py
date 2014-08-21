@@ -98,6 +98,7 @@ Run the 3D time-energy optimal alpha shape solver'''
     outF.write("Run time:\t%s\n"%(time.strftime("%c")))
     outF.write("Run type:\t%s\n"%("3D-TIME"))
     outF.write("deltaT:\t%s\n"%(solver.delT))
+    outF.write("Speed:\t%s\n"%(solver.sMax))
     outF.write("Init P:\t%s\t%s\t%s\n"%(p0[0],p0[1],p0[2]))
     outF.write("Final P:\t%s\t%s\t%s\n"%(pf[0],pf[1],pf[2]))
     outF.write("\n")

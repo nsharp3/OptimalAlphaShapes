@@ -39,8 +39,8 @@ Run the 2D time-energy optimal alpha shape solver'''
     pf:\tpf
     rhoE:\trhoE
     rhoT:\trhoT
+    Max speed:\tspeed
     delJ:\tdelJ
-    Initial Speed Upper Bound:\tspeed
     Completion Distance:\tdist
     Alpha:\talpha
     '''
@@ -76,21 +76,20 @@ Run the 2D time-energy optimal alpha shape solver'''
     # Get the problem and solution parameters
     rhoE = float(lines[5].split("\t")[1])
     rhoT = float(lines[6].split("\t")[1])
-    delJ = float(lines[7].split("\t")[1])
-    initSpeedUbound = float(lines[8].split("\t")[1])
+    sMax = float(lines[7].split("\t")[1])
+    delJ = float(lines[8].split("\t")[1])
     compDist = float(lines[9].split("\t")[1])
     alpha = float(lines[10].split("\t")[1])
 
     # Create the solver and solve
-    solver = AlphaFrontPropTESolver(field, p0, pf, rhoE, rhoT)
+    solver = AlphaFrontPropTESolver(field, p0, pf, rhoE, rhoT, sMax)
 
     solver.delJ = delJ
-    solver.initSMax = initSpeedUbound
     solver.completionDist = compDist
     solver.alphaRad = alpha
 
-    # The should be reasonable in pretty much all cases, so hardcode
-    # them instead of setting for now.
+    # These should be reasonable in pretty much all cases, so hardcode
+    # them instead of setting in input_params for now.
     solver.nThInit = 50
     solver.nSInit = 50
 
@@ -102,6 +101,7 @@ Run the 2D time-energy optimal alpha shape solver'''
     outF.write("Run time:\t%s\n"%(time.strftime("%c")))
     outF.write("Run type:\t%s\n"%("2D-TIME-ENERGY"))
     outF.write("deltaJ:\t%s\n"%(solver.delJ))
+    outF.write("Max speed:\t%s\n"%(solver.sMax))
     outF.write("Init P:\t%s\t%s\n"%(p0[0],p0[1]))
     outF.write("Final P:\t%s\t%s\n"%(pf[0],pf[1]))
     outF.write("\n")
