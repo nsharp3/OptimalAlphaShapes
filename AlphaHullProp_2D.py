@@ -31,8 +31,8 @@ class AlphaFrontPropTESolver:
         self.J = 0
 
         # Initialization parameters
-        self.nThInit = 50
-        self.nSInit = 50
+        self.nThInit = 25
+        self.nSInit = 25
 
         # Algorithm parameters
         self.solutionFound = False
