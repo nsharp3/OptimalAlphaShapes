@@ -6,7 +6,7 @@
 import numpy as np
 
 import getopt, sys, os, stat, subprocess, string
-from math import sin,cos,tan
+from math import *
 import random as rand
 import Queue
 from collections import defaultdict
@@ -143,47 +143,76 @@ class AlphaFrontPropTSolver:
 
     def OptimalDeltas(self, X):
 
+        # So equations look nicer
+        x = X[0]
+        y = X[1]
+        z = X[2]
         th = X[3]
         phi = X[4]
+        s = self.sMax
 
-        xDot = self.fluidFunc.Ux(X[0], X[1], X[2], self.t) + self.sMax*np.cos(th)*np.sin(phi)
-        yDot = self.fluidFunc.Uy(X[0], X[1], X[2], self.t) + self.sMax*np.sin(th)*np.sin(phi)
-        zDot = self.fluidFunc.Uz(X[0], X[1], X[2], self.t) + self.sMax*np.cos(phi)
+        # Note an unfortunate overloading of variable names- here
+        # xFullDot refers to the velocity of the vehicle and the
+        # current, below xDot refers to the thrust of the vehicle. 
+        xFullDot = self.fluidFunc.Ux(x, y, z, self.t) + s*np.cos(th)*np.sin(phi)
+        yFullDot = self.fluidFunc.Uy(x, y, z, self.t) + s*np.sin(th)*np.sin(phi)
+        zFullDot = self.fluidFunc.Uz(x, y, z, self.t) + s*np.cos(phi)
 
         # Get the derivatives all at once
-        dUxdx = self.fluidFunc.dUxdx(X[0],X[1],X[2],self.t)
-        dUxdy = self.fluidFunc.dUxdy(X[0],X[1],X[2],self.t)
-        dUxdz = self.fluidFunc.dUxdz(X[0],X[1],X[2],self.t)
+        duxdx = self.fluidFunc.dUxdx(x,y,z,self.t)
+        duxdy = self.fluidFunc.dUxdy(x,y,z,self.t)
+        duxdz = self.fluidFunc.dUxdz(x,y,z,self.t)
 
-        dUydx = self.fluidFunc.dUydx(X[0],X[1],X[2],self.t)
-        dUydy = self.fluidFunc.dUydy(X[0],X[1],X[2],self.t)
-        dUydz = self.fluidFunc.dUydz(X[0],X[1],X[2],self.t)
+        duydx = self.fluidFunc.dUydx(x,y,z,self.t)
+        duydy = self.fluidFunc.dUydy(x,y,z,self.t)
+        duydz = self.fluidFunc.dUydz(x,y,z,self.t)
 
-        dUzdx = self.fluidFunc.dUzdx(X[0],X[1],X[2],self.t)
-        dUzdy = self.fluidFunc.dUzdy(X[0],X[1],X[2],self.t)
-        dUzdz = self.fluidFunc.dUzdz(X[0],X[1],X[2],self.t)
+        duzdx = self.fluidFunc.dUzdx(x,y,z,self.t)
+        duzdy = self.fluidFunc.dUzdy(x,y,z,self.t)
+        duzdz = self.fluidFunc.dUzdz(x,y,z,self.t)
 
-        # Compute optimal control changes
-        # See paper explanation (or Mathematica notebook 3D_Derivations.nb)
-        if (phi < 0.001):
-            # Avoid numerical blowup for degenerate phi
-            thDot = 0
-        else:
-            thDot = -dUxdy*cos(th)**2 + dUydx*sin(th)**2            \
-                +   (dUxdx-dUydy)*cos(th)*sin(th)                   \
-                +   1.0 / tan(phi) * ( dUzdx*sin(th) - dUzdy*cos(th) )
+        # Compute optimal control changes. The (theta,phi) control law
+        # is degenerate in phi, so we project on to cartesian
+        # coordinates, compute the deltas, and project back.
+        
+        # Project current velocity to cartesian
+        xDot = s * np.cos(th) * np.sin(phi)
+        yDot = s * np.sin(th) * np.sin(phi)
+        zDot = s * np.cos(phi)
 
-        phiDot = -cos(phi)**2 * (dUzdx*cos(th) + dUzdy*sin(th)) \
-                + sin(phi)**2 * (dUxdz*cos(th) + dUydz*sin(th)) \
-                - 0.5 * ( -dUzdz + dUxdx*cos(th)**2 + dUydy*sin(th)**2 \
-                        + (dUxdy + dUydx)*cos(th)*sin(th) ) * sin(2*phi)
+        # Compute the optimal cartesian acceleration. See paperor
+        # derivation.
+        xDotDot =  s / pow(xDot**2 + yDot**2 + zDot**2, 1.5) * \
+                   (duxdy * xDot**2 * yDot - duxdx * xDot * yDot**2 + duydy * xDot * yDot**2 - duydx * yDot**3 + \
+                    duxdz * xDot**2 * zDot + duydz * xDot * yDot * zDot + duzdy * xDot * yDot * zDot - duzdx * yDot**2 * zDot - \
+                    duxdx * xDot * zDot**2 + duzdz * xDot * zDot**2 - duydx * yDot * zDot**2 - duzdx * zDot**3) 
 
+        yDotDot =  s / pow(xDot**2 + yDot**2 + zDot**2, 1.5) * \
+                   (-duxdy * xDot**3 + duxdx * xDot**2 * yDot - duydy * xDot**2 * yDot + duydx * xDot * yDot**2 - \
+                    duzdy * xDot**2 * zDot + duxdz * xDot * yDot * zDot + duzdx * xDot * yDot * zDot + duydz * yDot**2 * zDot - \
+                    duxdy * xDot * zDot**2 - duydy * yDot * zDot**2 + duzdz * yDot * zDot**2 - duzdy * zDot**3)
 
-        delX = xDot * self.delT
-        delY = yDot * self.delT
-        delZ = zDot * self.delT
-        delTh = thDot * self.delT
-        delPhi = phiDot * self.delT
+        zDotDot =  s / pow(xDot**2 + yDot**2 + zDot**2, 1.5) * \
+                   (-duxdz * xDot**3 - duydz * xDot**2 * yDot - duxdz * xDot * yDot**2 - duydz * yDot**3 + \
+                    duxdx * xDot**2 * zDot - duzdz * xDot**2 * zDot + duxdy * xDot * yDot * zDot + duydx * xDot * yDot * zDot + \
+                    duydy * yDot**2 * zDot - duzdz * yDot**2 * zDot + duzdx * xDot * zDot**2 + duzdy * yDot * zDot**2)
+        
+        # Compute the new velocities after optimal acceleration
+        newXDot = xDot + xDotDot * self.delT
+        newYDot = yDot + yDotDot * self.delT
+        newZDot = zDot + zDotDot * self.delT
+
+        # Find the desired new (th,phi), and just report the (delTh,
+        # delPhi) to get us there.
+        newTh = atan2(newYDot, newXDot)
+        newPhi = acos(newZDot / (sqrt(newXDot**2 + newYDot**2 + newZDot**2)))
+
+        # The actual deltas
+        delX = xFullDot * self.delT
+        delY = yFullDot * self.delT
+        delZ = zFullDot * self.delT
+        delTh = newTh - th
+        delPhi = newPhi - phi
 
         return np.array([delX, delY, delZ, delTh, delPhi, 0])
 
