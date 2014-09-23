@@ -3,6 +3,8 @@
 
 # Nicholas Sharp - nsharp3@vt.edu
 
+# FFMPEG command: ffmpeg -i %06d.png -r 30 -b 5000k -vf "setpts=(4)*PTS" movie.mp4
+
 import os,sys
 from optparse import OptionParser
 
