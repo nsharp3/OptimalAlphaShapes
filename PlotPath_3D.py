@@ -51,12 +51,22 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     parser.add_option("", "--format", help="output file format", metavar="string", default='pdf')
     parser.add_option("", "--space-lim", help="spatial limits for the plot", type="float", default=3.0)
     parser.add_option("", "--fig-size", help="set the size of the plotting window", type="int", default=6)
+    parser.add_option("", "--number-from", help="The starting number for the resulting file names", type="int", default=0)
+    parser.add_option("", "--num-reps", help="The number of frames for which to repeatedly save the plots.", type="int", default=1)
     parser.add_option("", "--show-plots", help="Show the plots", action='store_true', default=False)
+    parser.add_option("", "--movie-names", help="Use file names for making movies", action='store_true', default=False)
     parser.add_option("", "--make-movie", help="Run ffmpeg to make a movie at the end (with default settings that are usually decent)", action='store_true', default=False)
 
     (opts, args) = parser.parse_args(argV)
 
     solDir = args[1]
+    
+    # Make sure the movie commands are used in a semi-reasonable way
+    if((not opts.movie_names) and (opts.num_reps != 1 or opts.number_from != 0)):
+        print("Use the --movie-names option when using move-style filenames")
+        exit()
+
+    fileNum = opts.number_from
 
     # Read in the solution data
     solFilename = solDir + 'optimal_trajectory.txt'
@@ -101,11 +111,21 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     ax.scatter(pf[0],pf[1],pf[2], c='black', marker = 'o', s = 40)
 
     # Save the plot
-    fileName = solDir + 'optimal_traj' + '.' + opts.format
-    plt.savefig(fileName)
+    if opts.movie_names:
+        for i in range(opts.num_reps):
+            ax.azim = 3*i
+            fileName = solDir + "%06d"%(fileNum) + '.' + opts.format
+            plt.savefig(fileName)
+            fileNum += 1
+
+    else:
+        fileName = solDir + 'optimal_traj' + '.' + opts.format
+        plt.savefig(fileName)
+        
 
     if opts.show_plots:
         plt.show()
+
     plt.close(fig)
 
     if opts.make_movie:
@@ -140,8 +160,15 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     phiAx.tick_params(axis='both')
 
     # Save the plot
-    fileName = solDir + 'optimal_controls' + '.' + opts.format
-    plt.savefig(fileName)
+    if opts.movie_names:
+        for i in range(opts.num_reps):
+            fileName = solDir + "%06d"%(fileNum) + '.' + opts.format
+            plt.savefig(fileName)
+            fileNum += 1
+
+    else:
+        fileName = solDir + 'optimal_controls' + '.' + opts.format
+        plt.savefig(fileName)
 
     if opts.show_plots:
         plt.show()

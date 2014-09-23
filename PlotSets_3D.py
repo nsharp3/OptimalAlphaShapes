@@ -65,6 +65,7 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     parser.add_option("", "--show-plots", help="Show the plots", action='store_true', default=False)
     parser.add_option("", "--draw-info", help="start numbering at", action='store_true', default=False)
     parser.add_option("", "--make-movie", help="Run ffmpeg to make a movie at the end (with default settings that are usually decent)", action='store_true', default=False)
+    parser.add_option("", "--rep-last-frame", help="Produce N copies of the last frame to give a pausing effect.", type="int", default=1)
     parser.add_option("", "--point-cloud", help="Also make plots of the unconnected point cloud", action='store_true', default=False)
 
     (opts, args) = parser.parse_args(argV)
@@ -126,6 +127,7 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     iterInd = 0
     #for iterInd in range(numIters):
     while(True):
+        
 
         print("\nPlotting iteration %d from file line %d"%(iterInd,fileInd))
 
@@ -134,6 +136,9 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         if(fileInd >= len(lines)):
             print("Index off end of file, terminating")
             break
+
+        if opts.rep_last_frame > 1 and iterInd > 0:
+            plt.close(fig)
 
         ## Read in the points
         nPts = int(lines[fileInd].strip().split('\t')[1])
@@ -205,36 +210,6 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         if runType == "2D-TIME-ENERGY":
             ax.set_zlim([0,spaceLim])
 
-        '''
-        # TEST FIXME
-        xRange = [-.5,-.25]
-        yRange = [.65,.85]
-        zRange = [1.03,1.18]
-        ax.set_xlim(xRange)
-        ax.set_ylim(yRange)
-        ax.set_zlim(zRange)
-        newTris = []
-        for tri in tris:
-            #print("Checking " + str(tri))
-            good = True
-            for i in range(3):
-                x = pts[tri[i],0]
-                y = pts[tri[i],1]
-                z = pts[tri[i],2]
-                if x < xRange[0] or x > xRange[1]:
-                    good = False
-                if y < yRange[0] or y > yRange[1]:
-                    good = False
-                if z < zRange[0] or z > zRange[1]:
-                    good = False
-
-            if good:
-                newTris.append(tri)
-        tris = newTris
-        print(newTris)
-        ax.plot([-3.40779636e-01,-3.44840090e-01],[7.41689424e-01,7.45453758e-01],[1.09141787e+00,1.07480457e+00], c='black')
-        '''
-
         # Draw the actual plot
         ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=0.5, linewidth=0.1)
         
@@ -260,8 +235,11 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         # Optionally show the plots
         if opts.show_plots:
             plt.show()
-
-        plt.close(fig)
+        
+        # If this is the last frame, we made need to leave it around so
+        # we can create duplicate plots of it at the end.
+        if not opts.rep_last_frame > 0:
+            plt.close(fig)
 
         # Optionally make an unconnected point cloud plot
         if opts.point_cloud:
@@ -303,6 +281,15 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         fileInd += 1
 
         iterInd += 1
+
+    # Create duplicates of the last frame
+    if opts.rep_last_frame > 1:
+        for i in range(opts.rep_last_frame):
+            print("\tPlotting last frame")
+            fileName = solDir + "%06d"%(opts.n + iterInd + i) + '.' + opts.format
+            print("\tSaving plot file " + fileName)
+            plt.savefig(fileName)
+
 
     # Optionally render a movie
     if opts.make_movie:
