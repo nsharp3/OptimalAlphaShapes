@@ -83,6 +83,9 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     solFilename = solDir + 'search_hist.txt'
     print("Reading solution file from %s"%(solFilename))
 
+    # Program parameters
+    surfColor = '#3366FF'
+
     # Read through the file line by line
     # TODO: This means storing the entire file in memory, which could
     # get to be an issue for large runs
@@ -211,11 +214,13 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
             ax.set_zlim([0,spaceLim])
 
         # Draw the actual plot
-        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color='red', shade=False, alpha=0.5, linewidth=0.1)
+        ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color=surfColor, shade=False, alpha=0.5, linewidth=0.1)
         
         # Draw the target
         if runType == "2D-TIME-ENERGY":
             ax.plot([finalP[0],finalP[0]],[finalP[1],finalP[1]],[0,spaceLim], c='black')
+        else:
+            ax.scatter([finalP[0]],[finalP[1]], [finalP[2]], color='black', s=70, marker='*')
        
         if runType == "2D-TIME-ENERGY":
             costWord = "J"
@@ -224,10 +229,10 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         
         infoStr = 'iter = ' + str(iterInd) + '\n '+ costWord +' = ' + str(iterInd*delta) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
-            ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
+            ax.text2D(.05, .85, infoStr, transform=ax.transAxes, bbox=dict(facecolor='grey', alpha=0.5))
 
 
-        # Save the plot as a png and optionally a pdf
+        # Save the plot as the appropriate file type
         fileName = solDir + "%06d"%(opts.n + iterInd) + '.' + opts.format
         print("\tSaving plot file " + fileName)
         plt.savefig(fileName)
@@ -264,7 +269,7 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
             ax.scatter(pts[:,0],pts[:,1],pts[:,2], color='black', s=4)
             infoStr = 'iter = ' + str(iterInd) + '\nt = ' + str(iterInd*delta) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
             if opts.draw_info:
-                ax.text2D(.05, .90, infoStr, transform=ax.transAxes)
+                ax.text2D(.05, .85, infoStr, transform=ax.transAxes, bbox=dict(facecolor='grey', alpha=0.5))
 
             # Save the plot
             fileName = solDir + 'pointcloud' + "%06d"%(opts.n + iterInd) + '.' + opts.format

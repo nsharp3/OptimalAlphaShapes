@@ -108,16 +108,28 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     ax.set_zlim([-spaceLim,spaceLim])
 
     # TODO: Add an info string with num iterations, final time, etc
-    ax.plot(sol[:,0], sol[:,1], sol[:,2], color =niceRed, linewidth=6)
+    ax.plot(sol[:,0], sol[:,1], sol[:,2], color = niceBlue, linewidth=6)
     ax.scatter(p0[0],p0[1],p0[2], c='black', marker = 'o', s = 40)
     ax.scatter(pf[0],pf[1],pf[2], c='black', marker = 'o', s = 40)
 
     # Save the plot
     if opts.movie_names:
-        for i in range(opts.num_reps):
-            ax.azim = 3*i
+        for i in range(np.size(sol[:,0])):
+            ax.clear()
+
+            ax.plot(sol[:,0], sol[:,1], sol[:,2], color = niceBlue, linewidth=6)
+            ax.scatter(p0[0],p0[1],p0[2], c='black', marker = 'o', s = 40)
+            ax.scatter(pf[0],pf[1],pf[2], c='black', marker = 'o', s = 40)
+            
+            
+            print("Point is " + str((sol[i,0], sol[i,1], sol[i,2])))
+            scatterP = ax.scatter(sol[i,0], sol[i,1], sol[i,2], color = 'black', s = 100, marker = 'D')
+
+            ax.azim = i
             fileName = solDir + "%06d"%(fileNum) + '.' + opts.format
+            print("Saving " + fileName)
             plt.savefig(fileName)
+            #plt.show()
             fileNum += 1
 
     else:
@@ -166,6 +178,7 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         for i in range(opts.num_reps):
             fileName = solDir + "%06d"%(fileNum) + '.' + opts.format
             plt.savefig(fileName)
+            print("Saving "  + fileName)
             fileNum += 1
 
     else:
