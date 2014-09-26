@@ -55,6 +55,7 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     parser.add_option("", "--fig-size", help="set the size of the plotting window", type="int", default=6)
     parser.add_option("", "--number-from", help="The starting number for the resulting file names", type="int", default=0)
     parser.add_option("", "--num-reps", help="The number of frames for which to repeatedly save the plots.", type="int", default=1)
+    parser.add_option("", "--draw-info", help="start numbering at", action='store_true', default=False)
     parser.add_option("", "--show-plots", help="Show the plots", action='store_true', default=False)
     parser.add_option("", "--movie-names", help="Use file names for making movies", action='store_true', default=False)
     parser.add_option("", "--make-movie", help="Run ffmpeg to make a movie at the end (with default settings that are usually decent)", action='store_true', default=False)
@@ -91,6 +92,9 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
     for i in range(4,4+nPts):
         sol.append([float(x) for x in lines[i].split('\t')])
     sol = np.array(sol)
+    
+    # Infer the time delta from the final time and number of iterations
+    delta = finalT / (nPts - 1)
 
     # Make a 3D plot of the solution
     print("Making 3D plot of path")
@@ -117,19 +121,26 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         for i in range(np.size(sol[:,0])):
             ax.clear()
 
+            ax.azim = i
             ax.plot(sol[:,0], sol[:,1], sol[:,2], color = niceBlue, linewidth=6)
             ax.scatter(p0[0],p0[1],p0[2], c='black', marker = 'o', s = 40)
             ax.scatter(pf[0],pf[1],pf[2], c='black', marker = 'o', s = 40)
+          
+            infoStr = 'iter = ' + str(i) + '\n '+ 'time = ' + str(i*delta) + '\nnPts = N/A' + '\nnTris = N/A'
+            if opts.draw_info:
+                ax.text2D(.05, .85, infoStr, transform=ax.transAxes, bbox=dict(facecolor='grey', alpha=0.5))
             
-            
-            print("Point is " + str((sol[i,0], sol[i,1], sol[i,2])))
             scatterP = ax.scatter(sol[i,0], sol[i,1], sol[i,2], color = 'black', s = 100, marker = 'D')
 
-            ax.azim = i
+            ax.set_axisbelow(True) 
+
             fileName = solDir + "%06d"%(fileNum) + '.' + opts.format
             print("Saving " + fileName)
             plt.savefig(fileName)
-            #plt.show()
+            
+            if opts.show_plots:
+                plt.show()
+            
             fileNum += 1
 
     else:

@@ -215,18 +215,18 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
 
         # Draw the actual plot
         ax.plot_trisurf(pts[:,0],pts[:,1],pts[:,2], triangles=tris, color=surfColor, shade=False, alpha=0.5, linewidth=0.1)
-        
+
         # Draw the target
         if runType == "2D-TIME-ENERGY":
             ax.plot([finalP[0],finalP[0]],[finalP[1],finalP[1]],[0,spaceLim], c='black')
         else:
             ax.scatter([finalP[0]],[finalP[1]], [finalP[2]], color='black', s=70, marker='*')
-       
+
         if runType == "2D-TIME-ENERGY":
             costWord = "J"
         if runType == "3D-TIME":
             costWord = "t"
-        
+
         infoStr = 'iter = ' + str(iterInd) + '\n '+ costWord +' = ' + str(iterInd*delta) + '\nnPts = ' + str(nPts) + '\nnTris = ' + str(nTris)
         if opts.draw_info:
             ax.text2D(.05, .85, infoStr, transform=ax.transAxes, bbox=dict(facecolor='grey', alpha=0.5))
@@ -240,7 +240,7 @@ The SOLUTION_DIRECTOY should be the directory containing the data files for the 
         # Optionally show the plots
         if opts.show_plots:
             plt.show()
-        
+
         # If this is the last frame, we made need to leave it around so
         # we can create duplicate plots of it at the end.
         if not opts.rep_last_frame > 0:
