@@ -1,28 +1,24 @@
 OptimalAlphaShapes
 ==================
 
-Python implementation of optimal trajectory calculation in unsteady flows using alpha-shapes. Currently a work in progress.
+Python implementation of optimal trajectory calculation in unsteady flows using alpha-shapes.
 
 **Authors:** Nicholas Sharp (nsharp3@vt.edu) and Shane Ross (sdross@vt.edu)
 
 ###Overview
-Uses alpha-shapes to mesh a 3D front-propagation search. See paper for more details (TODO: paper URL). Solves two main problems:
+Uses alpha-shapes to mesh a 3D front-propagation search. See paper for more details (submitted to ACC 2015). Solves two main problems:
 
 * Finding time-optimal paths in 3D current fields
 * Finding optimal paths in 2d current fields when the optimality metric includes both time and energy
 
+(Only the first is addressed in the ACC submission, the latter is the focus of upcoming work)
+
 Note in both cases, this method is valid on time-varying fields, as well as the weakly-propelled case where the currents are significantly stronger than the vehicle's propulsion.
 
-To the authors' knowledge, this is the first published method for solving either of these problems.
-
-###Current questions to be resolved
-* Is compounding numerical error introduced when the controls are integrated from the ODEs instead of re-calculated geometrically from the mesh?
-* Classification of facets in the alpha shape from CGAL. Sometime extra interior facets are retained, is there a way to use the classifications to avoid this? Alternatively, post-process the shape to rectify a single surface and detect gaps.
-* Completion testing. Partly because of the facet classification issue, completition is tested simply by nearness to the hull. There are many other ways to do this.
-* Initialization in the time-energy problem. The speed is unbounded, so I can't come up with any elegant way to initialize the problem. For now I'm choosing an arbitrary maximal speed. This is valid as long as its sufficiently high, but must been done explicitly and isn't really a good idea.
-* Overall, this code is not tested as a system like I wish it was, basically because there is nothing to compare against. I welcome suggestions for known or verifiable results to use for testing.
+To the authors' knowledge, this is the first published method for solving either of these problems
 
 ###Running
-Note that the CGAL_Alpha_Wrapper.cpp code which interfaces with CGAL needs to be compiled and linked against CGAL. This can be messy, you're your own for that. Look in to CGAL CMake scripts and how they work. A binary is provided which was compiled on 64-bit linux, there is a small chance this may work for you but it is unlikely.
+Note that the CGAL_Alpha_Wrapper.cpp code which interfaces with CGAL needs to be compiled and linked against CGAL. This can be difficult, and the authors do not provide support. Look in to CGAL CMake scripts and how they work. A binary is provided which was compiled on 64-bit linux, there is a small chance this may work for you but it is very unlikely.
 
-This is a RESEARCH code. It is meant as a prototype implementation of a new idea. It likely contains bugs. Do not trust this code for anything unless you have verfied its functionality yourself.
+
+*This is a RESEARCH code. It is meant as a prototype implementation of a new idea. It may contains bugs. Do not trust this code for anything important unless you have verfied its functionality yourself.*
